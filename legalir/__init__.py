@@ -1,0 +1,1 @@
+"""Local-only UIT DSC 2026 Task 1 retrieval."""

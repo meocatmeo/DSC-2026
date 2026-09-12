@@ -1,1 +1,7 @@
 selected-contexts/
+.venv/
+__pycache__/
+*.pyc
+artifacts/
+models/
+outputs/

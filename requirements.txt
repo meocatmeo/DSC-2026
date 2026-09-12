@@ -1,0 +1,4 @@
+# Install the CUDA build of torch separately on the GPU machine (see README).
+numpy==2.2.6
+torch==2.7.1
+transformers==4.51.3
