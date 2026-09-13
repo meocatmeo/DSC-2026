@@ -126,14 +126,12 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     model.to(torch.float32 if device == "cpu" else amp_dtype)
     model.save_pretrained(output, safe_serialization=True)
     tokenizer.save_pretrained(output)
-    for extra in ("provenance.json",):
-        source = Path(model_path) / extra
-        if source.is_file():
-            (output / extra).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-    write_json(output / "training.json",
-               {"base": str(model_path), "groups": len(groups), "epochs": epochs,
+    record = {"base": str(model_path), "groups": len(groups), "epochs": epochs,
                 "batch_size": batch_size, "negatives": negatives, "temperature": temperature,
                 "learning_rate": learning_rate, "pooling": pooling, "steps": step,
-                "seconds": round(time.time() - started), "history": history[-50:]})
+                "seconds": round(time.time() - started), "history": history[-50:]}
+    write_json(output / "training.json", record)
+    from .train_ce import derived_provenance
+    write_json(output / "provenance.json", derived_provenance(model_path, record))
     store.close()
     print(f"Saved fine tuned bi-encoder to {output}")

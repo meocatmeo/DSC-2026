@@ -183,6 +183,11 @@ def main(argv=None):
     # Tuning uses training questions so the validation split stays an unbiased check.
     p.add_argument("--questions", default=str(ROOT / "artifacts" / "splits" / "train.json"))
     p.add_argument("--limit", type=int, default=600)
+    p.add_argument("--stage", choices=("lexical", "fusion"), default="lexical",
+                   help="lexical: BM25F and bigram settings (no GPU). "
+                        "fusion: how the lexical and dense channels combine (needs a dense index)")
+    p.add_argument("--target-depth", type=int, default=100,
+                   help="fusion stage: the candidate depth to maximise recall at")
     p.add_argument("--output", default=str(ROOT / "outputs" / "v2-tuning.json"))
 
     p = sub.add_parser("audit")
@@ -228,7 +233,14 @@ def dispatch(args):
         for directory in sorted(Path(args.models).iterdir()):
             if (directory / "provenance.json").is_file():
                 record = verify(directory)
-                print(f"{directory.name}: {record['repository']} @ {record['commit'][:12]} ok")
+                if record.get("derived"):
+                    base = record.get("derived_from", {})
+                    print(f"{directory.name}: fine tuned from "
+                          f"{base.get('repository', base.get('path', 'unknown'))} "
+                          f"(our weights, nothing to hash-verify)")
+                else:
+                    print(f"{directory.name}: {record['repository']} @ "
+                          f"{record['commit'][:12]} ok")
         return 0
 
     if args.command == "index-dense":
@@ -293,8 +305,12 @@ def dispatch(args):
         return 0
 
     if args.command == "tune":
-        from .tune import sweep
-        sweep(args, limit=args.limit, output=args.output)
+        if args.stage == "fusion":
+            from .tune import fusion_sweep
+            fusion_sweep(args, limit=args.limit, output=args.output, target=args.target_depth)
+        else:
+            from .tune import sweep
+            sweep(args, limit=args.limit, output=args.output)
         return 0
 
     if args.command == "audit":

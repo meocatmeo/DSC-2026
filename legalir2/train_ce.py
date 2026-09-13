@@ -21,6 +21,20 @@ from .store import Store, write_json
 from .train_bi import cosine_schedule
 
 
+def derived_provenance(base_path, training):
+    """Provenance for a checkpoint we trained, not one we downloaded.
+
+    Copying the base model's provenance.json into a fine-tuned directory looks
+    harmless and is not: it claims file hashes that training has just invalidated,
+    so `verify-models` reports the trained weights as corrupt. Record the lineage
+    instead, and leave out the `files` block that means "hash verifiable".
+    """
+    base = Path(base_path) / "provenance.json"
+    return {"derived_from": (json.loads(base.read_text(encoding="utf-8"))
+                             if base.is_file() else {"path": str(base_path)}),
+            "training": training}
+
+
 def load_teacher(path):
     if not path:
         return {}
@@ -140,15 +154,13 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     model.to(amp_dtype if device.startswith("cuda") else torch.float32)
     model.save_pretrained(output, safe_serialization=True)
     tokenizer.save_pretrained(output)
-    source = Path(model_path) / "provenance.json"
-    if source.is_file():
-        (output / "provenance.json").write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-    write_json(output / "training.json",
-               {"base": str(model_path), "groups": len(keep) and len(groups), "epochs": epochs,
+    record = {"base": str(model_path), "groups": len(keep) and len(groups), "epochs": epochs,
                 "group_size": group_size, "groups_per_step": groups_per_step,
                 "learning_rate": learning_rate, "max_length": max_length,
                 "teacher": str(teacher_path) if teacher_path else None,
                 "distill_weight": distill_weight if teacher_path else 0,
-                "steps": step, "seconds": round(time.time() - started), "history": history[-50:]})
+                "steps": step, "seconds": round(time.time() - started), "history": history[-50:]}
+    write_json(output / "training.json", record)
+    write_json(output / "provenance.json", derived_provenance(model_path, record))
     store.close()
     print(f"Saved fine tuned reranker to {output}")

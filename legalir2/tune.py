@@ -83,3 +83,116 @@ def sweep(args, limit=250, output=None, objective=OBJECTIVE):
         write_json(output, {"objective": objective, "best": best, "metrics": final,
                             "questions": len(queries), "history": history})
     return best, final
+
+
+# ---------------------------------------------------------------- fusion stage
+
+FUSION_CANDIDATES = {
+    "lexical_weight": (0.5, 0.75, 1.0, 1.5, 2.0),
+    "dense_weight": (0.5, 0.75, 1.0, 1.5, 2.0),
+    "rrf_constant": (10, 20, 60, 120),
+}
+
+
+def _document_ranking(chunk_ids, doc_of, scores, decay, depth, limit):
+    """Chunk scores -> ranked documents, mirroring the pipeline's aggregation."""
+    import numpy as np
+
+    limit = min(limit, len(scores))
+    picks = np.argpartition(-scores, limit - 1)[:limit]
+    picks = picks[np.argsort(-scores[picks], kind="stable")]
+    picks = picks[scores[picks] > 0]
+    grouped = {}
+    for position in picks:
+        doc = doc_of[int(chunk_ids[position])]
+        slot = grouped.setdefault(doc, [])
+        if len(slot) < depth:
+            slot.append(float(scores[position]))
+    out = [(doc, group[0] + decay * sum(group[1:])) for doc, group in grouped.items()]
+    out.sort(key=lambda x: (-x[1], x[0]))
+    return out
+
+
+def fusion_sweep(args, limit=400, output=None, depths=(5, 20, 50, 100, 200), target=100):
+    """Tune how the lexical and dense channels are combined.
+
+    Worth its own pass because of a result that is easy to get wrong: once both
+    retrievers are fine-tuned in-domain, naive fusion usually *hurts*. Gains survive
+    only with weights tuned for the specific pair, so the weights are fitted here
+    rather than assumed to be equal.
+
+    Each channel is scored once per question and cached, after which sweeping weights
+    costs nothing - the expensive part is the dense forward pass, not the arithmetic.
+    """
+    import numpy as np
+
+    from .dense import DenseIndex
+    from .fuse import rrf
+    from .lexical import Lexical
+    from .store import Store
+
+    store = Store(args.store)
+    lexical = Lexical(args.lexical)
+    dense = DenseIndex(args.dense, args.store, args.embedding_model, device=args.device)
+    doc_of = store.chunk_documents()
+    records = load_questions(args.questions, labeled=True)
+    items = list(records.items())[:limit]
+
+    decay, depth = lexical.settings["decay"], lexical.settings["depth"]
+    chunk_limit = lexical.settings["chunk_candidates"]
+    cached, started = [], time.time()
+    for number, (_, record) in enumerate(items, 1):
+        scores = lexical.chunk_scores(record["question"])
+        lex = _document_ranking(lexical.unigram.chunk_ids, doc_of, scores, decay, depth, chunk_limit)
+        vec = dense.scores(record["question"])
+        den = _document_ranking(dense.chunk_ids, doc_of, vec, decay, depth, chunk_limit)
+        cached.append((record["answer"], lex, den))
+        if number % 50 == 0:
+            print(f"  scored {number}/{len(items)} questions {time.time()-started:.0f}s", flush=True)
+    dense.close()
+    store.close()
+
+    def score(settings):
+        rows = []
+        for gold, lex, den in cached:
+            fused = rrf([lex, den], [settings["lexical_weight"], settings["dense_weight"]],
+                        settings["rrf_constant"])
+            rows.append((gold, [d for d, _ in fused]))
+        return {f"recall@{k}": round(recall_at(rows, k), 4) for k in depths}
+
+    def single(index):
+        """Each channel on its own, so fusion can be judged against both."""
+        rows = [(gold, [d for d, _ in (lex, den)[index]]) for gold, lex, den in cached]
+        return {f"recall@{k}": round(recall_at(rows, k), 4) for k in depths}
+
+    key = f"recall@{target}"
+    print(f"\nlexical alone : {single(0)}")
+    print(f"dense alone   : {single(1)}")
+
+    best = {"lexical_weight": 1.0, "dense_weight": 1.0, "rrf_constant": 60}
+    metrics = score(best)
+    current = metrics[key]
+    print(f"equal weights : {metrics}\n")
+    history = [{"settings": copy.copy(best), "metrics": metrics, "note": "equal weights"}]
+    for name, values in FUSION_CANDIDATES.items():
+        for value in values:
+            if best[name] == value:
+                continue
+            trial = dict(best, **{name: value})
+            trial_metrics = score(trial)
+            improved = trial_metrics[key] > current
+            history.append({"settings": copy.copy(trial), "metrics": trial_metrics,
+                            "note": f"{name}={value}" + (" kept" if improved else "")})
+            print(f"{name}={value:<6} {trial_metrics}" + ("  kept" if improved else ""), flush=True)
+            if improved:
+                best, current = trial, trial_metrics[key]
+
+    final = score(best)
+    print(f"\nbest fusion settings ({key}={current:.4f}):")
+    print(json.dumps(best, indent=1))
+    print("pass these to predict with --settings, and re-check on validation once.")
+    if output:
+        write_json(output, {"objective": key, "best": best, "metrics": final,
+                            "lexical_only": single(0), "dense_only": single(1),
+                            "questions": len(cached), "history": history})
+    return best, final

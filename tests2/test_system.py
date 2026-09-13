@@ -354,3 +354,95 @@ class TestRerankerEnsemble(unittest.TestCase):
         with self.assertRaises(ValueError):
             audit({"embedding": 568_000_000, "reranker1": 568_000_000,
                    "reranker2": 3_000_000_000})
+
+
+class TestFusionTuningHelpers(unittest.TestCase):
+    """The fusion sweep reuses the pipeline's chunk-to-document aggregation. If the
+    two ever disagree, tuned weights would be fitted against a ranking the pipeline
+    does not actually produce."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary.name)
+        store.build(make_corpus(root / "contexts", extra=6), root / "store.sqlite")
+        lexical.build(root / "store.sqlite", root / "lexical")
+        cls.store = store.Store(root / "store.sqlite")
+        cls.lexical = lexical.Lexical(root / "lexical")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.store.close()
+        cls.temporary.cleanup()
+
+    def test_document_ranking_matches_the_pipeline(self):
+        from legalir2.tune import _document_ranking
+        query = "Việc tổ chức lễ hội theo nguyên tắc nào?"
+        scores = self.lexical.chunk_scores(query)
+        settings = self.lexical.settings
+        mine = _document_ranking(self.lexical.unigram.chunk_ids, self.store.chunk_documents(),
+                                 scores, settings["decay"], settings["depth"],
+                                 settings["chunk_candidates"])
+        theirs, _ = self.lexical.search(query)
+        self.assertEqual([d for d, _ in mine], [d for d, _ in theirs])
+        for (a, x), (b, y) in zip(mine, theirs):
+            self.assertAlmostEqual(x, y, places=4)
+
+    def test_fusion_weights_change_the_order(self):
+        from legalir2.fuse import rrf
+        first = [("a", 3.0), ("b", 2.0), ("c", 1.0)]
+        second = [("c", 3.0), ("b", 2.0), ("a", 1.0)]
+        self.assertEqual(rrf([first, second], [3.0, 1.0], 60)[0][0], "a")
+        self.assertEqual(rrf([first, second], [1.0, 3.0], 60)[0][0], "c")
+
+    def test_rrf_constant_changes_how_sharply_top_ranks_dominate(self):
+        from legalir2.fuse import rrf
+        first = [("a", 1.0), ("b", 1.0), ("c", 1.0)]
+        second = [("b", 1.0), ("c", 1.0), ("a", 1.0)]
+        sharp = dict(rrf([first, second], [1.0, 1.0], 1))
+        flat = dict(rrf([first, second], [1.0, 1.0], 1000))
+        self.assertGreater(sharp["a"] - sharp["c"], flat["a"] - flat["c"])
+
+
+class TestDerivedProvenance(unittest.TestCase):
+    """Regression: copying a base model's provenance.json into a fine-tuned directory
+    claims file hashes that training has just invalidated, so `verify-models` reports
+    perfectly good trained weights as corrupt."""
+
+    def test_a_trained_checkpoint_records_lineage_not_hashes(self):
+        from legalir2.train_ce import derived_provenance
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            base.mkdir()
+            (base / "provenance.json").write_text(json.dumps({
+                "repository": "AITeamVN/Vietnamese_Reranker", "commit": "abc123",
+                "files": {"model.safetensors": {"sha256": "deadbeef", "bytes": 1}}}),
+                encoding="utf-8")
+            record = derived_provenance(base, {"epochs": 2})
+            self.assertNotIn("files", record)
+            self.assertEqual(record["derived_from"]["repository"],
+                             "AITeamVN/Vietnamese_Reranker")
+            self.assertEqual(record["training"]["epochs"], 2)
+
+    def test_verify_reports_a_derived_checkpoint_instead_of_failing(self):
+        from legalir2.download import verify
+        with tempfile.TemporaryDirectory() as directory:
+            tuned = Path(directory)
+            (tuned / "provenance.json").write_text(json.dumps({
+                "derived_from": {"repository": "base/model"}, "training": {"epochs": 2}}),
+                encoding="utf-8")
+            record = verify(tuned)
+            self.assertTrue(record["derived"])
+
+    def test_verify_still_fails_a_genuinely_corrupt_download(self):
+        from legalir2.download import verify
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "model.safetensors").write_bytes(b"not the bytes that were downloaded")
+            (root / "provenance.json").write_text(json.dumps({
+                "repository": "x/y", "commit": "abc",
+                "files": {"model.safetensors": {"sha256": "0" * 64, "bytes": 4}}}),
+                encoding="utf-8")
+            with self.assertRaises(ValueError) as raised:
+                verify(root)
+            self.assertIn("hash mismatch", str(raised.exception))

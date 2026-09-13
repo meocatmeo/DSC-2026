@@ -167,7 +167,10 @@ stage_results() {
   for d in models2/reranker-tuned models2/embedding-tuned models2/reranker-distilled; do
     [ -d "$d" ] && cp -r "$d" _results/models/ || true
   done
-  cp artifacts2/groups/*.stats.json _results/ 2>/dev/null || true
+  # The mined groups are cheap to rebuild but not free (11 min), and they are what
+  # every retraining run starts from - so they travel with the results.
+  mkdir -p _results/groups
+  cp artifacts2/groups/*.jsonl artifacts2/groups/*.stats.json _results/groups/ 2>/dev/null || true
   du -sh _results
   echo "Pull it down with:  rclone copy $ROOT/_results gdrive:DSC-2026-results -P"
   echo "Trained weights are ~2.3 GB each; delete _results/models for scores only."

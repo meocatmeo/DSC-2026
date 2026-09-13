@@ -8,3 +8,12 @@ outputs/
 artifacts2/
 models2/
 _upload/
+
+# credentials - never commit these again
+*.conf
+aic-readwrite.conf
+rclone.conf
+rclone.exe
+*.json.credentials
+Claude outputs/
+_results/

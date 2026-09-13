@@ -76,8 +76,16 @@ def download(repo, directory, revision="main"):
 
 
 def verify(directory):
+    """Re-check stored file hashes for a downloaded checkpoint.
+
+    A fine-tuned checkpoint has no `files` block - its weights are ours, not a
+    publisher's, so there is nothing to verify against. Those are reported as
+    derived rather than failed.
+    """
     directory = Path(directory)
     provenance = json.loads((directory / "provenance.json").read_text(encoding="utf-8"))
+    if "files" not in provenance:
+        return dict(provenance, derived=True)
     problems = []
     for name, record in provenance["files"].items():
         path = directory / name
