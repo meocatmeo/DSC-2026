@@ -17,10 +17,10 @@ from .predict import load_questions
 from .store import Store, write_json
 
 
-def groups(store, lexical, questions_path, limit, distractors):
+def groups(store, lexical, questions_path, limit, distractors, minimum=4):
     records = load_questions(questions_path, labeled=True)
     positions = {int(c): i for i, c in enumerate(lexical.unigram.chunk_ids)}
-    built = []
+    built, dropped = [], 0
     for qid, record in list(records.items())[:limit]:
         gold = [g for g in record["answer"] if g in store.doc_position]
         if not gold:
@@ -43,11 +43,13 @@ def groups(store, lexical, questions_path, limit, distractors):
             chunks = [c for c in store.document_chunk_ids(doc) if c in positions]
             if chunks:
                 negatives.append(max(chunks, key=lambda c: (float(scores[positions[c]]), -c)))
-        if len(negatives) < 4:
+        if len(negatives) < minimum:
+            # Too few distractors to say anything about ranking for this question.
+            dropped += 1
             continue
         built.append({"id": qid, "question": record["question"],
                       "positive": positive, "negatives": negatives})
-    return built
+    return built, dropped
 
 
 def metrics(ranks, size):
@@ -60,12 +62,19 @@ def metrics(ranks, size):
 
 def run(store_path, lexical_directory, questions_path, model_path, mode="embedding",
         device="cuda", limit=300, distractors=23, batch_size=16, max_length=768,
-        output=None, lexical_settings=None):
+        output=None, lexical_settings=None, min_distractors=4):
     store = Store(store_path)
     lexical = Lexical(lexical_directory, lexical_settings)
-    built = groups(store, lexical, questions_path, limit, distractors)
+    built, dropped = groups(store, lexical, questions_path, limit, distractors,
+                            min_distractors)
     if not built:
-        raise ValueError("No probe groups could be built from these questions")
+        raise ValueError(
+            f"No probe groups could be built: every question yielded fewer than "
+            f"{min_distractors} distractors. Check the lexical index, or lower "
+            f"--distractors on a small corpus.")
+    if dropped:
+        print(f"  note: {dropped} question(s) dropped for having fewer than "
+              f"{min_distractors} distractors", flush=True)
     started = time.time()
     ranks, sizes = [], set()
 
@@ -97,7 +106,7 @@ def run(store_path, lexical_directory, questions_path, model_path, mode="embeddi
             sizes.add(len(chunks))
 
     result = metrics(ranks, sorted(sizes)[-1] if sizes else 0)
-    result.update(model=str(model_path), mode=mode, parameters=parameters,
+    result.update(model=str(model_path), mode=mode, parameters=parameters, dropped=dropped,
                   head=getattr(model, "head", None), pooling=getattr(model, "pooling", None),
                   seconds=round(time.time() - started))
     model.close()

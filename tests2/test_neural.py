@@ -67,7 +67,7 @@ class TestNeural(unittest.TestCase):
     def setUpClass(cls):
         cls.temporary = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temporary.name)
-        store.build(make_corpus(cls.root / "contexts"), cls.root / "store.sqlite")
+        store.build(make_corpus(cls.root / "contexts", extra=8), cls.root / "store.sqlite")
         lexical.build(cls.root / "store.sqlite", cls.root / "lexical")
         cls.encoder = tiny_encoder(cls.root / "encoder")
         cls.cross = tiny_cross_encoder(cls.root / "cross")
@@ -91,11 +91,13 @@ class TestNeural(unittest.TestCase):
         from legalir2.dense import DenseIndex, build
         manifest = build(self.root / "store.sqlite", self.encoder, self.root / "dense",
                          device="cpu", batch_size=2, max_length=32)
-        self.assertEqual(manifest["chunks"], 7)
+        expected = store.Store(self.root / "store.sqlite")
+        self.assertEqual(manifest["chunks"], expected.metadata["chunks"])
+        expected.close()
         index = DenseIndex(self.root / "dense", self.root / "store.sqlite", self.encoder,
                            device="cpu")
         scores = index.scores("lễ hội")
-        self.assertEqual(len(scores), 7)
+        self.assertEqual(len(scores), manifest["chunks"])
         index.close()
 
     def test_sequence_reranker_produces_one_score_per_passage(self):
@@ -117,7 +119,8 @@ class TestNeural(unittest.TestCase):
                             settings={"candidates": 3, "passages": 2, "rerank_max_length": 64,
                                       "rerank_batch": 2})
         answer = pipeline.search("Việc tổ chức lễ hội theo nguyên tắc nào?")
-        self.assertEqual(len(answer), 3)
+        # Five ids: documents beyond `candidates` still fill the tail from fusion order.
+        self.assertEqual(len(answer), 5)
         self.assertEqual(len(set(answer)), len(answer))
         self.assertTrue(set(answer) <= set(pipeline.store.doc_ids))
         self.assertLess(pipeline.audit["total"], 4_000_000_000)
@@ -166,7 +169,7 @@ class TestProbe(unittest.TestCase):
     def setUpClass(cls):
         cls.temporary = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temporary.name)
-        store.build(make_corpus(cls.root / "contexts"), cls.root / "store.sqlite")
+        store.build(make_corpus(cls.root / "contexts", extra=8), cls.root / "store.sqlite")
         lexical.build(cls.root / "store.sqlite", cls.root / "lexical")
         cls.encoder = tiny_encoder(cls.root / "encoder")
         cls.questions = cls.root / "train.json"
@@ -183,11 +186,118 @@ class TestProbe(unittest.TestCase):
         from legalir2.probe import run
         result = run(self.root / "store.sqlite", self.root / "lexical", self.questions,
                      self.encoder, mode="embedding", device="cpu", limit=2, distractors=4,
-                     batch_size=2, max_length=32)
+                     batch_size=2, max_length=32, min_distractors=1)
         self.assertEqual(result["questions"], 2)
         self.assertGreaterEqual(result["mrr"], 0.0)
         self.assertLessEqual(result["top1"], 1.0)
         self.assertFalse((self.root / "dense").exists())
+
+    def test_questions_with_too_few_distractors_are_dropped_and_counted(self):
+        """One of the two questions retrieves only its own document plus one other, so
+        at a floor of two distractors it cannot be scored. Dropping it silently would
+        make the reported metric quietly unrepresentative, so the count is returned."""
+        from legalir2.probe import run
+        result = run(self.root / "store.sqlite", self.root / "lexical", self.questions,
+                     self.encoder, mode="embedding", device="cpu", limit=2, distractors=4,
+                     batch_size=2, max_length=32, min_distractors=2)
+        self.assertEqual(result["questions"], 1)
+        self.assertEqual(result["dropped"], 1)
+
+    def test_probe_explains_itself_when_nothing_can_be_built(self):
+        from legalir2.probe import run
+        with self.assertRaises(ValueError) as raised:
+            run(self.root / "store.sqlite", self.root / "lexical", self.questions,
+                self.encoder, mode="embedding", device="cpu", limit=2, distractors=4,
+                batch_size=2, max_length=32, min_distractors=50)
+        self.assertIn("distractors", str(raised.exception))
+
+
+@unittest.skipUnless(HAVE_TORCH, "PyTorch is not installed in this environment")
+class TestContextLimit(unittest.TestCase):
+    """Approved checkpoints range from 256 usable tokens (PhoBERT rerankers) to 8192
+    (bge-m3 and its Vietnamese derivatives). Asking for more than the position table
+    holds fails inside the embedding layer, which on a full corpus index happens an
+    hour into the run."""
+
+    def test_limit_accounts_for_the_roberta_position_offset(self):
+        from legalir2.models import context_limit
+        self.assertEqual(context_limit({"model_type": "xlm-roberta",
+                                        "max_position_embeddings": 514}), 512)
+        self.assertEqual(context_limit({"model_type": "xlm-roberta",
+                                        "max_position_embeddings": 8194}), 8192)
+        self.assertEqual(context_limit({"model_type": "qwen3",
+                                        "max_position_embeddings": 32768}), 32768)
+
+    def test_no_position_information_means_no_clamp(self):
+        from legalir2.models import clamp_length, context_limit
+        self.assertIsNone(context_limit({"model_type": "qwen3"}))
+        self.assertEqual(clamp_length(4096, {"model_type": "qwen3"}), 4096)
+
+    def test_request_beyond_the_table_is_clamped_not_raised(self):
+        from legalir2.models import clamp_length
+        short = {"model_type": "xlm-roberta", "max_position_embeddings": 514}
+        self.assertEqual(clamp_length(768, short), 512)
+        self.assertEqual(clamp_length(256, short), 256)
+
+    def test_a_short_context_encoder_still_indexes(self):
+        """The fixture's position table holds 512; the pipeline asks for 768."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            store.build(make_corpus(root / "contexts", extra=2), root / "store.sqlite")
+            from legalir2.dense import build
+            manifest = build(root / "store.sqlite", tiny_encoder(root / "enc"),
+                             root / "dense", device="cpu", batch_size=2, max_length=768)
+            self.assertLessEqual(manifest["max_length"], 512)
+
+
+@unittest.skipUnless(HAVE_TORCH, "PyTorch is not installed in this environment")
+class TestMixedPrecision(unittest.TestCase):
+    def test_cpu_trains_in_float32_with_no_scaler(self):
+        import torch
+
+        from legalir2.models import amp_setup
+        enabled, dtype, scaler = amp_setup(torch, "cpu")
+        self.assertFalse(enabled)
+        self.assertIs(dtype, torch.float32)
+        self.assertIsNone(scaler)
+
+    def test_a_card_without_bfloat16_gets_float16_and_a_scaler(self):
+        """Turing and older cannot autocast to bfloat16. Without this fallback the
+        training loop raises on a cheap rented card, after the data is already there."""
+        import torch
+
+        from legalir2 import models
+        real = torch.cuda.is_bf16_supported
+        torch.cuda.is_bf16_supported = lambda *a, **k: False
+        try:
+            enabled, dtype, scaler = models.amp_setup(torch, "cuda")
+        finally:
+            torch.cuda.is_bf16_supported = real
+        self.assertTrue(enabled)
+        self.assertIs(dtype, torch.float16)
+        self.assertIsNotNone(scaler)
+
+    def test_cross_encoder_training_runs_end_to_end_on_cpu(self):
+        """A real optimiser step through the listwise loss, on fixtures."""
+        from legalir2.train_ce import train
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            store.build(make_corpus(root / "contexts", extra=8), root / "store.sqlite")
+            lexical.build(root / "store.sqlite", root / "lexical")
+            questions = root / "train.json"
+            questions.write_text(json.dumps({
+                str(i): {"question": "Việc tổ chức lễ hội theo nguyên tắc nào?",
+                         "answer": ["101"]} for i in range(6)
+            }, ensure_ascii=False), encoding="utf-8")
+            from legalir2.mine import mine
+            groups = root / "groups.jsonl"
+            mine(root / "store.sqlite", root / "lexical", questions, groups,
+                 negatives=4, positives=1, device="cpu")
+            train(root / "store.sqlite", groups, tiny_cross_encoder(root / "ce"),
+                  root / "ce-tuned", device="cpu", epochs=1, group_size=3,
+                  groups_per_step=2, max_length=32, checkpointing=False)
+            self.assertTrue((root / "ce-tuned" / "config.json").is_file())
+            self.assertTrue((root / "ce-tuned" / "training.json").is_file())
 
 
 if __name__ == "__main__":

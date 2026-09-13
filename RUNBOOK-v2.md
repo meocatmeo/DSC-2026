@@ -230,6 +230,155 @@ gap your BM25 run showed. If the fine-tuned reranker does **not** beat the zero-
 one, suspect the mined chunk-level positives first — inspect `artifacts2/groups/train.jsonl`
 and `train.stats.json`, especially the `missed` and `pruned` counts.
 
+### Choosing a GPU
+
+The model is small — 568M parameters — so this workload does not reward a datacenter
+card. What it needs is enough VRAM for AdamW in fp32 and bfloat16 support.
+
+VRAM arithmetic for `train-ce`: 568M parameters at fp32 is 2.27 GB, gradients another
+2.27 GB, and AdamW's two moment buffers 4.54 GB — **9.1 GB before a single activation**.
+With gradient checkpointing and 32 pairs of 512 tokens per step, activations add roughly
+1–3 GB, so the cross encoder fits in 16 GB. `train-bi` pushes 64 passages per step and
+lands nearer 14 GB, which is tight on a 16 GB card.
+
+| Target | Card | Fits |
+|---|---|---|
+| First submission (`train-ce` only) | 16 GB Ampere+ — RTX 4080, A4000 | yes |
+| Full path including `train-bi` | **24 GB Ampere+ — RTX 4090, 3090, A5000** | comfortably |
+| Overkill for this size | A100, H100 | 2–4x the price for well under 2x the throughput |
+
+**Ampere or newer is a hard requirement in practice.** Turing cards (RTX 2080 Ti, T4) have
+no bfloat16. The training loop now detects this and falls back to float16 with a gradient
+scaler, so it will run — but float16 training of a 568M encoder is slower and less stable
+than bfloat16, and the saving is not worth it.
+
+Host specifications that matter beyond the GPU:
+
+* **8+ vCPU.** Tokenisation in the training loop is CPU-side and single threaded; a fast
+  GPU on 2 vCPUs will wait on it. `build-store`, `index-lexical` and `mine` are entirely CPU.
+* **32 GB system RAM.** The lexical postings need about 2 GB resident; the rest is headroom.
+* **50 GB disk.** CUDA torch is about 5 GB installed, each checkpoint 2.3 GB, the chunk
+  store and postings 1.4 GB, dense vectors 0.7 GB. The common 20 GB default is not enough.
+* **CUDA 12.x host driver**, since `gpu-setup.sh` installs the cu128 wheels.
+
+### What runs on CPU, and what does not
+
+Measured here on two cores with a 568M bge-m3-geometry encoder. Scale roughly linearly
+with your core count — an 8-core laptop is about 4x these rates.
+
+| Command | Two cores | Verdict on a laptop |
+|---|---|---|
+| `build-store`, `index-lexical`, `predict --no-dense --no-rerank`, `tune` | minutes | **Yes** — numpy only, no model at all |
+| `probe --limit 25` (600 passages @ 768 tokens) | ~22 min | **Yes** — this is what it is for |
+| `probe --limit 25 --max-length 256` | ~7 min | **Yes** — a faster screen, if you only need to spot a loser |
+| `index-dense` (341,401 chunks @ 768) | ~206 h | **No.** GPU only |
+| `train-ce` / `train-bi` | far worse — backward pass | **No.** GPU only |
+| `predict` with a reranker, full 1,050 questions | ~90 h at 50x3 passages | **No**, but `--limit 20` is a viable smoke test |
+
+Sequence length dominates: 768 → 512 tokens is about 1.5x faster, 768 → 256 about 3.3x.
+Article chunks are 320 whitespace words, roughly 500–600 tokens, so `--max-length 512`
+truncates a little and `256` truncates a lot — fine for a screen, not for a measurement.
+
+### Context length differs by an order of magnitude across the sheet
+
+bge-m3 and its Vietnamese derivatives extend the position table to 8192; plain XLM-R
+stops at 512; PhoBERT based rerankers such as `itdainb/PhoRanker` stop at 256. Asking for
+more than a checkpoint holds raises an index error inside the embedding layer — which on
+a full corpus index surfaces an hour into the run. Every requested length is now clamped
+to what the checkpoint actually accepts, with a printed note, so a short context model
+degrades instead of crashing. The effective length is recorded in the dense manifest and
+in `.run.json`.
+
+### Environment note: transformers 4 vs 5
+
+`pip install transformers` on a fresh environment now installs 5.x, while the GPU
+environment pins 4.51.3. Version 5 renamed `torch_dtype` to `dtype` in
+`from_pretrained`. The loader picks the right keyword at run time, so both work — but
+if you hit any other 5.x incompatibility, pinning is the quick escape:
+
+```powershell
+& $py -m pip install "transformers==4.51.3"
+```
+
+## The path from 0.85 to 0.92
+
+Public test measured **0.85** from the CPU-only lexical system, against **0.8483** on the
+held-out validation split. That is close enough to 1:1 that validation can be trusted to
+choose between configurations from here — a better position than the earlier BM25 run,
+where validation 0.7379 became public 0.77.
+
+Where the remaining points physically are, from `outputs/v2-lexical-validation.diagnostics.json`:
+
+| Rank of the gold document | Share of answer mass |
+|---|---:|
+| 1–5 (already returned) | 0.8483 |
+| **6–50** | **0.1125** |
+| 51–200 | 0.0186 |
+| never retrieved | 0.0206 |
+
+So a reranker over the top 50 has a ceiling of 0.9608 and **0.92 means capturing 64% of
+the gap between the current order and a perfect one**. Deepening the shortlist lowers the
+bar: at 100 candidates the ceiling is 0.9752 and 0.92 needs 57%; at 200, 0.9794 and 55%.
+
+That is demanding but not unreasonable for an in-domain fine-tuned cross encoder. It is
+not, however, one step. Treat it as a budget:
+
+| Step | Expected | Why |
+|---|---|---|
+| Fine-tuned cross encoder over top 50 | 0.885 – 0.910 | Captures 35–55% of the headroom. Everything else depends on this working. |
+| Deepen to 100 candidates via two-stage reranking | +0.005 – 0.015 | Raises the ceiling from 0.9608 to 0.9752 at roughly the cost of the shallow pass. |
+| Fine-tuned bi-encoder + dense channel | +0.005 – 0.015 | Attacks the 2.1% never retrieved and raises the ceiling further. |
+| Round-two hard negatives, mined with the trained models | +0.005 – 0.015 | Standard second iteration; the first round's negatives are only as hard as the lexical stage. |
+| Ensemble or distillation into the second stage | +0.005 – 0.015 | The 2.86B of unused budget, spent where it is measured to help. |
+| Retrain the final model on all 7,000 questions | +0.003 – 0.010 | 18% more labelled data, after configuration is frozen on the 5,950 split. |
+
+Midpoints land near 0.92–0.93. Every line has to roughly land; if the first one comes in
+under 0.87, stop and inspect the mined groups rather than continuing down the list.
+
+### Two-stage and ensembled reranking
+
+`--reranker-model` accepts several checkpoints. The first is the wide pass over
+`candidates` documents; the rest rescore only its best `stage2_candidates`, so a deep
+shortlist costs little more than a shallow one. Scores from different rerankers are not
+comparable across models, so each ranking is min-max normalised within the question before
+being combined; `reranker_weights` sets the mix, and equal weights mean two models that
+disagree exactly cancel to a deterministic tie.
+
+```powershell
+# Deep shortlist, one cheap wide pass, one careful pass over the survivors.
+py -m legalir2 predict --evaluate `
+    --reranker-model models2
+eranker-tuned models2
+eranker-distilled `
+    --settings '{"candidates": 100, "stage2_candidates": 25, "passages": 3}' `
+    --output 'D:\DSC-2026\outputs\v2-two-stage.json'
+```
+
+Tune `candidates`, `stage2_candidates` and `passages` together: more candidates raises the
+ceiling, more passages per document reduces the chance the relevant article was never shown
+to the reranker at all, and both cost linear GPU time.
+
+### Round-two negative mining
+
+The first mining round draws negatives from the lexical stage alone, so they are only as
+hard as BM25F. Once a bi-encoder is trained, mine again — the negatives it surfaces are the
+ones the model itself confuses, which is what the second round of training needs.
+
+```powershell
+py -m legalir2 mine --dense artifacts2\dense-tuned --embedding-model models2\embedding-tuned `
+    --output 'D:\DSC-2026\artifacts2\groups\train-round2.jsonl'
+py -m legalir2 train-ce --groups 'D:\DSC-2026\artifacts2\groups\train-round2.jsonl' `
+    --output models2\reranker-round2
+```
+
+### Training on all 7,000 at the very end
+
+`artifacts/splits/train.json` holds 5,950 questions; the organisers supplied 7,000. Freeze
+every configuration choice using the 5,950/1,050 split, then — and only then — mine and
+retrain on the full `train.json` for the submitted model. It adds 18% more supervision, and
+from that point the validation split is inside training, so its score is no longer a valid
+estimate of anything. Keep the split-trained numbers as the record.
+
 ## Things deliberately not done
 
 * No external API of any kind, commercial or otherwise; `download` is the only command

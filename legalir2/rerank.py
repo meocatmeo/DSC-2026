@@ -9,7 +9,7 @@ Both run entirely from local weights. Scores are order preserving only within a
 single question, so they are always used as a ranking, never compared across
 questions.
 """
-from .models import INSTRUCTION, RERANK_PREFIX, RERANK_SUFFIX, Local
+from .models import INSTRUCTION, RERANK_PREFIX, RERANK_SUFFIX, Local, clamp_length
 
 
 def head_for(path):
@@ -27,7 +27,9 @@ class Reranker:
         self.local = Local(path, kind="sequence" if self.head == "sequence" else "causal",
                            device=device)
         self.parameters = self.local.parameters
-        self.max_length = max_length
+        self.max_length = clamp_length(max_length, self.local.config, self.local.tokenizer,
+                                       f"reranker {self.local.path.name}")
+        self.context_limit = self.local.context_limit
         if self.head == "causal":
             tokenizer = self.local.tokenizer
             self.prefix = tokenizer.encode(RERANK_PREFIX, add_special_tokens=False)
@@ -37,7 +39,7 @@ class Reranker:
     # ------------------------------------------------------------------ scoring
 
     def score(self, query, passages, batch_size=8, max_length=None):
-        max_length = max_length or self.max_length
+        max_length = min(max_length or self.max_length, self.max_length)
         if not passages:
             return []
         return (self._score_causal(query, passages, batch_size, max_length)

@@ -36,6 +36,37 @@ def pooling_for(model_type):
     return "last"
 
 
+def context_limit(config, tokenizer=None):
+    """The longest sequence this checkpoint can actually accept.
+
+    Approved checkpoints differ by more than an order of magnitude: bge-m3 and its
+    Vietnamese derivatives extend the position table to 8192, plain XLM-R stops at
+    512, and PhoBERT based rerankers stop at 256. Asking for more than the position
+    table holds raises an index error deep inside the embedding layer - which, on a
+    full corpus index, happens an hour into the run. Clamping up front turns that
+    into a printed note.
+    """
+    positions = config.get("max_position_embeddings")
+    limits = []
+    if positions:
+        # Learned absolute positions reserve slots for padding and the two specials.
+        offset = 2 if (config.get("model_type") or "").startswith(("xlm-roberta", "roberta")) else 0
+        limits.append(int(positions) - offset)
+    declared = getattr(tokenizer, "model_max_length", None) if tokenizer else None
+    if isinstance(declared, int) and 0 < declared < 1_000_000:
+        limits.append(declared)
+    return min(limits) if limits else None
+
+
+def clamp_length(requested, config, tokenizer=None, label=""):
+    limit = context_limit(config, tokenizer)
+    if limit and requested > limit:
+        print(f"  note: {label or 'model'} accepts at most {limit} tokens; "
+              f"using {limit} instead of {requested}", flush=True)
+        return limit
+    return requested
+
+
 def needs_instruction(path):
     name = str(path).lower()
     return "qwen3-embedding" in name or "qwen3.5-embed" in name
@@ -45,6 +76,34 @@ def torch_dtype(torch, device):
     if device == "cpu":
         return torch.float32
     return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+
+def amp_setup(torch, device):
+    """Pick the mixed precision mode this card actually supports.
+
+    bfloat16 needs Ampere or newer. On older cards (Turing and before) bfloat16
+    autocast is unavailable, so float16 is used with a gradient scaler instead -
+    otherwise training either raises or silently runs at fp32 speed. Returns
+    (enabled, dtype, scaler).
+    """
+    if not device.startswith("cuda"):
+        return False, torch.float32, None
+    if torch.cuda.is_bf16_supported():
+        return True, torch.bfloat16, None
+    print("  note: this GPU has no bfloat16 support; training in float16 with a "
+          "gradient scaler", flush=True)
+    return True, torch.float16, torch.amp.GradScaler("cuda")
+
+
+def dtype_kwarg(value):
+    """`torch_dtype` was renamed to `dtype` in transformers 5.
+
+    The GPU environment pins 4.51.3 while a freshly created CPU environment gets 5.x,
+    so the keyword is chosen at run time rather than pinned to one of them.
+    """
+    import transformers
+    major = int(str(transformers.__version__).split(".")[0])
+    return {"dtype": value} if major >= 5 else {"torch_dtype": value}
 
 
 class Local:
@@ -75,9 +134,10 @@ class Local:
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model = loader.from_pretrained(
-            path, local_files_only=True, torch_dtype=dtype or torch_dtype(torch, device),
-            attn_implementation="sdpa", trust_remote_code=False).to(device).eval()
+            path, local_files_only=True, attn_implementation="sdpa", trust_remote_code=False,
+            **dtype_kwarg(dtype or torch_dtype(torch, device))).to(device).eval()
         self.parameters = sum(p.numel() for p in self.model.parameters())
+        self.context_limit = context_limit(self.config, self.tokenizer)
         self.provenance = (read_json(path / "provenance.json")
                            if (path / "provenance.json").is_file() else {"path": str(path)})
 

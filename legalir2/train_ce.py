@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from .mine import load_groups
+from .models import amp_setup, dtype_kwarg
 from .store import Store, write_json
 from .train_bi import cosine_schedule
 
@@ -48,8 +49,8 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
 
     tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
     model = AutoModelForSequenceClassification.from_pretrained(
-        model_path, local_files_only=True, torch_dtype=torch.float32,
-        attn_implementation="sdpa", num_labels=1).to(device)
+        model_path, local_files_only=True, attn_implementation="sdpa", num_labels=1,
+        **dtype_kwarg(torch.float32)).to(device)
     if checkpointing:
         model.gradient_checkpointing_enable()
     model.train()
@@ -59,7 +60,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scheduler = cosine_schedule(optimizer, int(warmup_ratio * steps), max(1, steps))
     started, step, history = time.time(), 0, []
-    use_amp = device.startswith("cuda")
+    use_amp, amp_dtype, scaler = amp_setup(torch, device)
 
     for epoch in range(epochs):
         order = list(range(len(groups)))
@@ -88,8 +89,8 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                                truncation="only_second", max_length=max_length,
                                return_tensors="pt")
             inputs = {k: v.to(device) for k, v in inputs.items()}
-            with torch.autocast(device_type="cuda" if use_amp else "cpu",
-                                dtype=torch.bfloat16, enabled=use_amp):
+            with torch.autocast(device_type="cuda" if device.startswith("cuda") else "cpu",
+                                dtype=amp_dtype, enabled=use_amp):
                 logits = model(**inputs).logits
             logits = logits.float().view(len(keep), group_size)
             targets = torch.zeros(len(keep), dtype=torch.long, device=device)
@@ -112,10 +113,17 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                                                         reduction="none").sum(dim=1)
                 distilled = (divergence * weight).sum() / weight.sum().clamp(min=1.0)
                 loss = loss + distill_weight * distilled
-            (loss / accumulate).backward()
+            scaled = loss / accumulate
+            scaler.scale(scaled).backward() if scaler else scaled.backward()
             if (step + 1) % accumulate == 0:
+                if scaler:
+                    scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                optimizer.step()
+                if scaler:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
             step += 1
@@ -129,7 +137,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
 
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    model.to(torch.bfloat16 if device.startswith("cuda") else torch.float32)
+    model.to(amp_dtype if device.startswith("cuda") else torch.float32)
     model.save_pretrained(output, safe_serialization=True)
     tokenizer.save_pretrained(output)
     source = Path(model_path) / "provenance.json"

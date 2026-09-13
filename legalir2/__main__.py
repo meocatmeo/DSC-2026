@@ -39,9 +39,11 @@ APPROVED = {
 
 
 def paths(args):
+    models = args.reranker_model
+    models = [models] if isinstance(models, str) else list(models)
     return {"store": Path(args.store), "lexical": Path(args.lexical),
             "dense": Path(args.dense), "embedding": Path(args.embedding_model),
-            "reranker": Path(args.reranker_model)}
+            "rerankers": [Path(m) for m in models]}
 
 
 def add_common(parser):
@@ -49,7 +51,10 @@ def add_common(parser):
     parser.add_argument("--lexical", default=str(DEFAULT_LEXICAL))
     parser.add_argument("--dense", default=str(DEFAULT_DENSE))
     parser.add_argument("--embedding-model", default=str(DEFAULT_MODELS / "embedding"))
-    parser.add_argument("--reranker-model", default=str(DEFAULT_MODELS / "reranker"))
+    parser.add_argument("--reranker-model", nargs="+", default=[str(DEFAULT_MODELS / "reranker")],
+                        help="one checkpoint, or several to ensemble; with several the "
+                             "first is the wide pass and the rest rescore its best "
+                             "--stage2-candidates documents")
     parser.add_argument("--device", default="cuda")
 
 
@@ -57,7 +62,10 @@ def pipeline_from(args, use_dense=True, use_reranker=True, settings=None):
     from .pipeline import Pipeline
     p = paths(args)
     dense = str(p["dense"]) if use_dense and (p["dense"] / "manifest.json").is_file() else None
-    reranker = str(p["reranker"]) if use_reranker and p["reranker"].is_dir() else None
+    reranker = [str(m) for m in p["rerankers"] if m.is_dir()] if use_reranker else []
+    missing = [str(m) for m in p["rerankers"] if use_reranker and not m.is_dir()]
+    if missing:
+        print(f"note: reranker checkpoint(s) not found: {', '.join(missing)}", file=sys.stderr)
     if use_dense and not dense:
         print("note: no dense index found, running lexical only", file=sys.stderr)
     if use_reranker and not reranker:
@@ -109,6 +117,8 @@ def main(argv=None):
     p.add_argument("--questions", default=str(ROOT / "artifacts" / "splits" / "train.json"))
     p.add_argument("--limit", type=int, default=300)
     p.add_argument("--distractors", type=int, default=23)
+    p.add_argument("--min-distractors", type=int, default=4,
+                   help="skip a question with fewer distractors than this")
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--max-length", type=int, default=768)
     p.add_argument("--output", default=None)
@@ -231,7 +241,8 @@ def dispatch(args):
         from .probe import run
         run(args.store, args.lexical, args.questions, args.model, mode=args.mode,
             device=args.device, limit=args.limit, distractors=args.distractors,
-            batch_size=args.batch_size, max_length=args.max_length, output=args.output)
+            batch_size=args.batch_size, max_length=args.max_length, output=args.output,
+            min_distractors=args.min_distractors)
         return 0
 
     if args.command == "mine":
@@ -261,7 +272,8 @@ def dispatch(args):
 
     if args.command == "train-ce":
         from .train_ce import train
-        train(args.store, args.groups, args.reranker_model, args.output, device=args.device,
+        base = args.reranker_model[0] if isinstance(args.reranker_model, list) else args.reranker_model
+        train(args.store, args.groups, base, args.output, device=args.device,
               epochs=args.epochs, group_size=args.group_size,
               groups_per_step=args.groups_per_step, learning_rate=args.learning_rate,
               max_length=args.max_length, accumulate=args.accumulate,

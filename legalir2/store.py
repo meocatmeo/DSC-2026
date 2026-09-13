@@ -141,7 +141,12 @@ class Store:
             self.db.execute("SELECT value FROM metadata WHERE key='corpus'").fetchone()[0])
         rows = self.db.execute("SELECT id,title,number,subject FROM documents ORDER BY id").fetchall()
         self.doc_ids = [r[0] for r in rows]
-        self.doc_position = {r[0]: i for i, r in enumerate(self.doc_ids)}
+        # Iterate the id list itself: enumerating rows-vs-ids here is easy to get wrong,
+        # and a wrong mapping makes every `g in store.doc_position` check silently false,
+        # which mines zero training groups instead of raising.
+        self.doc_position = {doc: i for i, doc in enumerate(self.doc_ids)}
+        if len(self.doc_position) != len(self.doc_ids):
+            raise ValueError("Duplicate document ids in the chunk store")
         self.labels = {r[0]: " | ".join(x for x in (r[1], r[2], r[3]) if x) for r in rows}
         self._text = {}
 

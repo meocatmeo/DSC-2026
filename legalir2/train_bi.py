@@ -32,7 +32,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     import torch
     from transformers import AutoModel, AutoTokenizer
 
-    from .models import pooling_for, family
+    from .models import amp_setup, dtype_kwarg, family, pooling_for
 
     store = Store(store_path)
     groups = load_groups(groups_path)
@@ -48,8 +48,8 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     model = AutoModel.from_pretrained(model_path, local_files_only=True,
-                                      torch_dtype=torch.float32,
-                                      attn_implementation="sdpa").to(device)
+                                      attn_implementation="sdpa",
+                                      **dtype_kwarg(torch.float32)).to(device)
     if checkpointing:
         model.gradient_checkpointing_enable()
     model.train()
@@ -67,11 +67,12 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                            return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.autocast(device_type="cuda" if device.startswith("cuda") else "cpu",
-                            dtype=torch.bfloat16, enabled=device.startswith("cuda")):
+                            dtype=amp_dtype, enabled=use_amp):
             hidden = model(**inputs).last_hidden_state
         vectors = pool(hidden, inputs["attention_mask"]).float()
         return torch.nn.functional.normalize(vectors, p=2, dim=1)
 
+    use_amp, amp_dtype, scaler = amp_setup(torch, device)
     steps = (len(groups) // batch_size) * epochs
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scheduler = cosine_schedule(optimizer, int(warmup_ratio * steps), max(1, steps))
@@ -98,10 +99,17 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
             logits = query_vectors @ passage_vectors.T / temperature
             targets = torch.arange(len(batch), device=device) * (1 + negatives)
             loss = torch.nn.functional.cross_entropy(logits, targets)
-            (loss / accumulate).backward()
+            scaled = loss / accumulate
+            scaler.scale(scaled).backward() if scaler else scaled.backward()
             if (step + 1) % accumulate == 0:
+                if scaler:
+                    scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                optimizer.step()
+                if scaler:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
             step += 1
@@ -115,7 +123,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
 
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    model.half() if device == "cpu" else model.to(torch.bfloat16)
+    model.to(torch.float32 if device == "cpu" else amp_dtype)
     model.save_pretrained(output, safe_serialization=True)
     tokenizer.save_pretrained(output)
     for extra in ("provenance.json",):

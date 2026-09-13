@@ -2,3 +2,7 @@
 numpy==2.2.6
 torch==2.7.1
 transformers==4.51.3
+# The approved Vietnamese checkpoints ship a SentencePiece model rather than a
+# prebuilt tokenizer.json, so transformers converts it at load time and needs both.
+sentencepiece
+protobuf

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .models import INSTRUCTION, Local, needs_instruction
+from .models import INSTRUCTION, Local, clamp_length, needs_instruction
 from .store import Store, file_hash, read_json, write_json
 
 
@@ -21,9 +21,15 @@ class Embedder:
         self.instruct = needs_instruction(path)
         self.dimension = int(self.local.model.config.hidden_size)
         self.parameters = self.local.parameters
+        self.context_limit = self.local.context_limit
+
+    def usable_length(self, requested):
+        return clamp_length(requested, self.local.config, self.local.tokenizer,
+                            f"embedder {self.local.path.name}")
 
     def encode(self, texts, batch_size=16, max_length=1024, query=False, dtype="float16"):
         torch = self.local.torch
+        max_length = self.usable_length(max_length)
         out = np.empty((len(texts), self.dimension), dtype=dtype)
         for start in range(0, len(texts), batch_size):
             batch = list(texts[start:start + batch_size])
@@ -57,6 +63,7 @@ def build(store_path, model_path, directory, device="cuda", batch_size=16, max_l
     store = Store(store_path)
     count = store.metadata["chunks"]
     embedder = Embedder(model_path, device=device)
+    max_length = embedder.usable_length(max_length)
     vectors = np.lib.format.open_memmap(directory / "vectors.npy", mode="w+", dtype="float16",
                                         shape=(count, embedder.dimension))
     ids, offset, started = [], 0, time.time()

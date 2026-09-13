@@ -29,10 +29,29 @@ DOCUMENTS = [
 ]
 
 
-def make_corpus(directory):
+TOPICS = ["đất đai", "giao thông đường bộ", "thuế thu nhập cá nhân", "xây dựng",
+          "giáo dục nghề nghiệp", "an toàn thực phẩm", "chứng khoán", "lao động"]
+
+
+def filler(number):
+    """A plausible extra document, so tests that need a real candidate pool have one."""
+    topic = TOPICS[number % len(TOPICS)]
+    return {"id": 200 + number,
+            "name": f"Nghi-dinh-{number}-2021-ND-CP-quy-dinh-ve-{number}",
+            "passage": (f"CHÍNH PHỦ\n\n-----\n\nSố: {number}/2021/NĐ-CP\n\n"
+                        f"Hà Nội, ngày 01 tháng 6 năm 2021\n\nNGHỊ ĐỊNH\n\n"
+                        f"QUY ĐỊNH CHI TIẾT VỀ {topic.upper()}\n\n"
+                        f"Điều 1. Phạm vi điều chỉnh\n\nNghị định này quy định chi tiết "
+                        f"về {topic} trên lãnh thổ Việt Nam.\n\n"
+                        f"Điều 2. Đối tượng áp dụng\n\nNghị định này áp dụng đối với tổ "
+                        f"chức, cá nhân có hoạt động liên quan đến {topic}.\n\n")}
+
+
+def make_corpus(directory, extra=0):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    for number, record in enumerate(DOCUMENTS, 1):
+    records = list(DOCUMENTS) + [filler(n) for n in range(extra)]
+    for number, record in enumerate(records, 1):
         (directory / f"context_{number}.json").write_text(
             json.dumps(record, ensure_ascii=False), encoding="utf-8")
     return directory
@@ -84,6 +103,15 @@ class TestStoreAndLexical(unittest.TestCase):
         documents, chunks = self.lexical.search("")
         self.assertEqual(chunks, [])
         self.assertEqual(documents, [])
+
+    def test_document_positions_are_keyed_by_whole_document_id(self):
+        """Regression: building this map by iterating the wrong variable keyed it by the
+        first character of each id, which made every membership check silently false and
+        mined zero training groups instead of raising."""
+        self.assertEqual(sorted(self.store.doc_position), ["101", "102", "103"])
+        self.assertEqual(self.store.doc_position["102"], 1)
+        for doc in self.store.doc_ids:
+            self.assertIn(doc, self.store.doc_position)
 
     def test_chunk_ids_agree_between_store_and_index(self):
         mapping = self.store.chunk_documents()
@@ -219,3 +247,110 @@ class TestAudit(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StubReranker:
+    """A reranker with a fixed opinion, so the ensemble wiring can be tested
+    without any model weights."""
+
+    def __init__(self, preference, parameters=100):
+        self.preference = preference          # document id -> score
+        self.parameters = parameters
+        self.calls = []
+
+    def score(self, query, passages, batch_size=8, max_length=768):
+        self.calls.append(len(passages))
+        return [self.preference.get(self.owner_of(p), 0.0) for p in passages]
+
+    def owner_of(self, passage):
+        for key in self.preference:
+            if key in passage:
+                return key
+        return None
+
+    def close(self):
+        pass
+
+
+class TestRerankerEnsemble(unittest.TestCase):
+    """The stub passages carry their document id as text, so a stub reranker can
+    express a preference and the combination logic is what is under test."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary.name)
+        store.build(make_corpus(root / "contexts"), root / "store.sqlite")
+        lexical.build(root / "store.sqlite", root / "lexical")
+        cls.root = root
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def build(self, rerankers, settings=None):
+        from legalir2.pipeline import Pipeline
+        pipeline = Pipeline(self.root / "store.sqlite", self.root / "lexical",
+                            settings=dict({"candidates": 3, "passages": 1}, **(settings or {})))
+        pipeline.rerankers = rerankers
+        pipeline._passages = lambda doc, prior: [f"passage of {doc}"]
+        return pipeline
+
+    def test_single_reranker_decides_the_order(self):
+        pipeline = self.build([StubReranker({"102": 9.0, "101": 1.0, "103": 0.5})])
+        self.assertEqual(pipeline.search("lễ hội", top_k=1), ["102"])
+        pipeline.store.close()
+
+    def test_a_heavier_second_reranker_overturns_the_first(self):
+        wide = StubReranker({"101": 5.0, "102": 4.0, "103": 0.0})
+        precise = StubReranker({"101": 0.0, "102": 9.0, "103": 0.0})
+        pipeline = self.build([wide, precise], {"stage2_candidates": 2, "rerank_blend": 0.0,
+                                                "reranker_weights": [1.0, 3.0]})
+        self.assertEqual(pipeline.search("lễ hội", top_k=1), ["102"])
+        pipeline.store.close()
+
+    def test_equal_weights_make_opposed_rankings_a_deterministic_tie(self):
+        """Each ranking is min-max normalised before combining, so two models that
+        disagree exactly cancel. The tie then breaks on document id, not on order of
+        evaluation, which keeps a run reproducible."""
+        wide = StubReranker({"101": 5.0, "102": 4.0, "103": 0.0})
+        precise = StubReranker({"101": 0.0, "102": 9.0, "103": 0.0})
+        settings = {"stage2_candidates": 2, "rerank_blend": 0.0}
+        first = self.build([wide, precise], settings).search("lễ hội", top_k=2)
+        second = self.build([wide, precise], settings).search("lễ hội", top_k=2)
+        self.assertEqual(first, second)
+        self.assertEqual(sorted(first), ["101", "102"])
+
+    def test_second_stage_only_sees_the_promoted_documents(self):
+        wide = StubReranker({"101": 5.0, "102": 4.0, "103": 0.0})
+        precise = StubReranker({"101": 1.0, "102": 2.0, "103": 9.0})
+        pipeline = self.build([wide, precise], {"stage2_candidates": 2, "rerank_blend": 0.0})
+        order = pipeline.search("lễ hội", top_k=3)
+        # 103 was never promoted, so its high second-stage score cannot reach it.
+        self.assertEqual(precise.calls, [2])
+        self.assertEqual(order[2], "103")
+        pipeline.store.close()
+
+    def test_promoted_documents_always_outrank_the_rest(self):
+        wide = StubReranker({"101": 5.0, "102": 4.0, "103": 3.0})
+        precise = StubReranker({"101": -50.0, "102": -60.0, "103": 0.0})
+        pipeline = self.build([wide, precise], {"stage2_candidates": 2, "rerank_blend": 0.0})
+        self.assertEqual(pipeline.search("lễ hội", top_k=3)[2], "103")
+        pipeline.store.close()
+
+    def test_ensemble_without_a_second_stage_scores_every_candidate_twice(self):
+        first = StubReranker({"101": 1.0, "102": 2.0, "103": 3.0})
+        second = StubReranker({"101": 1.0, "102": 2.0, "103": 3.0})
+        pipeline = self.build([first, second], {"stage2_candidates": 0})
+        pipeline.search("lễ hội")
+        self.assertEqual(first.calls, second.calls)
+        pipeline.store.close()
+
+    def test_audit_counts_every_deployed_reranker(self):
+        from legalir2.models import audit
+        report = audit({"embedding": 568_000_000, "reranker1": 568_000_000,
+                        "reranker2": 2_000_000_000})
+        self.assertEqual(report["total"], 3_136_000_000)
+        with self.assertRaises(ValueError):
+            audit({"embedding": 568_000_000, "reranker1": 568_000_000,
+                   "reranker2": 3_000_000_000})

@@ -14,6 +14,7 @@ Every stage is optional so each one can be ablated on the validation split.
 """
 import time
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 
@@ -36,6 +37,8 @@ DEFAULTS = {
     "rerank_max_length": 768,
     "aggregate": "max_plus",   # max | max_plus | softmax, over a document's passages
     "aggregate_weight": 0.2,
+    "stage2_candidates": 25,   # documents the second and later rerankers rescore
+    "reranker_weights": None,  # per reranker ensemble weights; None means equal
     "top_k": 5,
 }
 
@@ -68,17 +71,21 @@ class Pipeline:
         self.store = Store(store_path)
         self.lexical = Lexical(lexical_directory, lexical_settings)
         self.dense = None
-        self.reranker = None
+        self.rerankers = []
         parameters = {}
         if dense_directory:
             from .dense import DenseIndex
             self.dense = DenseIndex(dense_directory, store_path, embedding_path, device=device)
             parameters["embedding"] = self.dense.parameters
-        if reranker_path:
+        paths = ([reranker_path] if isinstance(reranker_path, (str, type(Path())))
+                 else list(reranker_path or []))
+        if paths:
             from .rerank import Reranker
-            self.reranker = Reranker(reranker_path, device=device,
-                                     max_length=self.settings["rerank_max_length"])
-            parameters["reranker"] = self.reranker.parameters
+            for position, path in enumerate(paths):
+                model = Reranker(path, device=device,
+                                 max_length=self.settings["rerank_max_length"])
+                self.rerankers.append(model)
+                parameters[f"reranker{position + 1}"] = model.parameters
         self.audit = audit(parameters) if parameters else {"components": {}, "total": 0}
         self.chunk_document = self.store.chunk_documents()
         self.timings = defaultdict(float)
@@ -142,31 +149,70 @@ class Pipeline:
                                 radius) if radius else self.store.chunk_text(chunk)
                 for chunk in picked]
 
-    def search(self, query, top_k=None, diagnostics=None):
-        top_k = top_k or self.settings["top_k"]
-        fused, chunk_prior = self.candidates(query)
-        if diagnostics is not None:
-            diagnostics["candidates"] = [doc for doc, _ in fused]
-        if not self.reranker:
-            return [doc for doc, _ in fused[:top_k]]
-        shortlist = fused[:self.settings["candidates"]]
+    def _rerank(self, model, query, documents, chunk_prior, cache):
+        """Document scores from one reranker over the given documents."""
         texts, owners = [], []
-        for doc, _ in shortlist:
-            for passage in self._passages(doc, chunk_prior):
+        for doc in documents:
+            if doc not in cache:
+                cache[doc] = self._passages(doc, chunk_prior)
+            for passage in cache[doc]:
                 texts.append(passage)
                 owners.append(doc)
         started = time.time()
-        scores = self.reranker.score(query, texts, self.settings["rerank_batch"],
-                                     self.settings["rerank_max_length"])
+        scores = model.score(query, texts, self.settings["rerank_batch"],
+                             self.settings["rerank_max_length"])
         self.timings["rerank"] += time.time() - started
         grouped = defaultdict(list)
         for doc, score in zip(owners, scores):
             grouped[doc].append(score)
-        neural = [(doc, aggregate_passages(grouped[doc], self.settings["aggregate"],
-                                           self.settings["aggregate_weight"]))
-                  for doc, _ in shortlist]
-        blended = normalised([neural, shortlist], [1.0, self.settings["rerank_blend"]])
-        order = [doc for doc, _ in blended]
+        return [(doc, aggregate_passages(grouped[doc], self.settings["aggregate"],
+                                         self.settings["aggregate_weight"]))
+                for doc in documents]
+
+    def search(self, query, top_k=None, diagnostics=None):
+        """Fuse, rerank, and return the top document ids.
+
+        With one reranker this is a single pass over `candidates` documents. With
+        more than one, the first model is the cheap wide pass and the rest rescore
+        only its best `stage2_candidates`, so a deeper - and therefore higher
+        ceilinged - shortlist costs little more than a shallow one. Scores from
+        different rerankers are not comparable, so they are min-max normalised
+        within this question before being combined.
+        """
+        top_k = top_k or self.settings["top_k"]
+        fused, chunk_prior = self.candidates(query)
+        if diagnostics is not None:
+            diagnostics["candidates"] = [doc for doc, _ in fused]
+        if not self.rerankers:
+            return [doc for doc, _ in fused[:top_k]]
+
+        shortlist = fused[:self.settings["candidates"]]
+        passage_cache = {}
+        weights = self.settings["reranker_weights"] or [1.0] * len(self.rerankers)
+        first = self._rerank(self.rerankers[0], query, [d for d, _ in shortlist],
+                             chunk_prior, passage_cache)
+
+        stage2 = self.settings["stage2_candidates"]
+        if len(self.rerankers) > 1 and stage2:
+            ordered = sorted(first, key=lambda x: (-x[1], x[0]))
+            promoted = [doc for doc, _ in ordered[:stage2]]
+            rankings = [[(d, s) for d, s in first if d in set(promoted)]]
+            used = [weights[0]]
+            for model, weight in zip(self.rerankers[1:], weights[1:]):
+                rankings.append(self._rerank(model, query, promoted, chunk_prior, passage_cache))
+                used.append(weight)
+            prior = [(d, s) for d, s in shortlist if d in set(promoted)]
+            top = normalised(rankings + [prior], used + [self.settings["rerank_blend"]])
+            order = [doc for doc, _ in top]
+            order += [doc for doc, _ in ordered if doc not in set(order)]
+        else:
+            rankings, used = [first], [weights[0]]
+            for model, weight in zip(self.rerankers[1:], weights[1:]):
+                rankings.append(self._rerank(model, query, [d for d, _ in shortlist],
+                                             chunk_prior, passage_cache))
+                used.append(weight)
+            blended = normalised(rankings + [shortlist], used + [self.settings["rerank_blend"]])
+            order = [doc for doc, _ in blended]
         order += [doc for doc, _ in fused if doc not in set(order)]
         if diagnostics is not None:
             diagnostics["reranked"] = order[:20]
@@ -179,6 +225,6 @@ class Pipeline:
 
     def close(self):
         self.store.close()
-        for component in (self.dense, self.reranker):
+        for component in [self.dense] + self.rerankers:
             if component:
                 component.close()
