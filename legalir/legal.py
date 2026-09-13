@@ -50,3 +50,25 @@ def diverse_chunks(chunk_ids, text_lookup, count):
         if len(selected) == count:
             return selected
     return (selected + deferred)[:count]
+
+
+def context_window(chunk_ids, anchor, text_lookup, title, overlap, radius=1):
+    """Reconstruct neighboring windows from one document in original order.
+
+    Remove only the known index overlap, and only when the words match exactly.
+    Never infer missing text or join across document boundaries.
+    """
+    if radius < 0 or overlap < 0:
+        raise ValueError("Context radius and overlap must be nonnegative")
+    position = chunk_ids.index(anchor)
+    selected = chunk_ids[max(0, position-radius):position+radius+1]
+    merged = []
+    for chunk in selected:
+        text = text_lookup(chunk)
+        if title and (text == title or text.startswith(title + " ")):
+            text = text[len(title):].lstrip()
+        words = text.split()
+        if overlap and len(merged) >= overlap and merged[-overlap:] == words[:overlap]:
+            words = words[overlap:]
+        merged.extend(words)
+    return " ".join(([title] if title else []) + merged)

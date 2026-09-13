@@ -3,6 +3,7 @@
 import importlib.util
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from legalir.data import prepare, write_json
@@ -72,6 +73,16 @@ class NeuralTests(unittest.TestCase):
                 self.assertLess(engine.manifest["parameters"], 4_000_000_000)
             finally:
                 engine.close()
+            engine = Retriever(database, dense=dense, embedding=root / "embedding",
+                               device="cpu", candidates=2, dense_only=True)
+            try:
+                with patch("legalir.retrieval.lexical", side_effect=AssertionError("BM25 must not run")):
+                    self.assertEqual(set(engine.search("tax", 2)), {"1", "2"})
+                self.assertEqual(engine.manifest["mode"], "dense")
+            finally:
+                engine.close()
+            with self.assertRaises(ValueError):
+                Retriever(database, dense_only=True)
 
 
 if __name__ == "__main__":

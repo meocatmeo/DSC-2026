@@ -1,11 +1,12 @@
 """FTS5 BM25, chunk dense retrieval, document RRF, and passage reranking."""
 
 import heapq
+import json
 from collections import defaultdict
 from pathlib import Path
 
 from .data import connect, file_hash, read_json, terms, write_json
-from .legal import diverse_chunks, phrase_evidence
+from .legal import context_window, diverse_chunks, phrase_evidence
 
 
 def lexical(db, query, limit):
@@ -74,12 +75,24 @@ def build_dense(database, model_path, directory, device="cuda", batch_size=8, ma
 class Retriever:
     def __init__(self, database, dense=None, embedding=None, reranker=None, device="cuda",
                  candidates=60, chunk_candidates=600, passages=2, batch_size=4,
-                 legal_weight=0.0):
+                 legal_weight=0.0, dense_only=False, context_radius=0, reranker_max_length=1536):
+        if context_radius not in (0, 1, 2) or not 256 <= reranker_max_length <= 8192:
+            raise ValueError("Use context radius 0..2 and reranker max length 256..8192")
+        if context_radius and not reranker:
+            raise ValueError("Context windows require --rerank")
+        self.context_radius = context_radius
+        self.reranker_max_length = reranker_max_length
+        if dense_only and not dense:
+            raise ValueError("Dense-only retrieval requires a dense index")
+        self.dense_only = dense_only
         if min(candidates, chunk_candidates, passages, batch_size) < 1:
             raise ValueError("Retrieval sizes must be positive")
         self.db = connect(database)
+        self.titles = dict(self.db.execute("SELECT id,title FROM documents"))
+        metadata = json.loads(self.db.execute("SELECT value FROM metadata WHERE key='corpus'").fetchone()[0])
+        self.overlap_words = metadata["overlap_words"]
         self.documents = [x[0] for x in self.db.execute("SELECT id FROM documents ORDER BY id")]
-        self.chunk_documents = dict(self.db.execute("SELECT id,document_id FROM chunks"))
+        self.chunk_documents = dict(self.db.execute("SELECT id,document_id FROM chunks ORDER BY id"))
         self.doc_chunks = defaultdict(list)
         for chunk, doc in self.chunk_documents.items():
             self.doc_chunks[doc].append(chunk)
@@ -106,7 +119,7 @@ class Retriever:
                 raise ValueError("Invalid dense vector dimensions")
             self.embedder = Embedder(embedding, device=device)
             self.embedding_length = manifest["max_length"]
-            self.manifest.update(mode="hybrid", embedding=manifest["model_manifest"], parameters=self.embedder.parameters)
+            self.manifest.update(mode="dense" if dense_only else "hybrid", embedding=manifest["model_manifest"], parameters=self.embedder.parameters)
         if reranker:
             from .neural import Reranker
             self.reranker = Reranker(reranker, device=device)
@@ -115,12 +128,13 @@ class Retriever:
         if self.manifest["parameters"] >= 4_000_000_000:
             raise ValueError("Combined system is not strictly below four billion parameters")
         self.manifest.update(candidates=candidates, chunk_candidates=chunk_candidates, passages=passages,
-                             legal_weight=legal_weight)
+                             legal_weight=legal_weight, context_radius=context_radius,
+                             reranker_max_length=reranker_max_length)
 
     def search(self, query, top_k=5):
         if not 1 <= top_k <= 5:
             raise ValueError("top_k must be between one and five")
-        sparse = lexical(self.db, query, self.chunk_candidates)
+        sparse = [] if self.dense_only else lexical(self.db, query, self.chunk_candidates)
         rankings = [document_ranking(sparse, self.chunk_documents)]
         passage_scores = defaultdict(float)
         for rank, (chunk, _) in enumerate(sparse, 1):
@@ -173,9 +187,11 @@ class Retriever:
             for doc, _ in candidates:
                 selected = selected_passages[doc][:self.passages]
                 for chunk in selected:
-                    texts.append(text_for(chunk))
+                    texts.append(context_window(self.doc_chunks[doc], chunk, text_for,
+                                                self.titles[doc], self.overlap_words, self.context_radius)
+                                 if self.context_radius else text_for(chunk))
                     owners.append(doc)
-            scores = self.reranker.score(query, texts, self.batch_size)
+            scores = self.reranker.score(query, texts, self.batch_size, self.reranker_max_length)
             best = defaultdict(float)
             for doc, score in zip(owners, scores):
                 best[doc] = max(best[doc], score)

@@ -66,11 +66,13 @@ def predict(args):
     if args.mode == "bm25" and args.rerank:
         print("Using BM25 candidate retrieval plus neural reranking")
     started = time.perf_counter()
-    engine = Retriever(args.database, dense=args.dense if args.mode == "hybrid" else None,
+    engine = Retriever(args.database, dense=args.dense if args.mode in ("hybrid", "dense") else None,
                        embedding=args.models / "embedding",
                        reranker=args.models / "reranker" if args.rerank else None,
                        device=args.device, candidates=args.candidates, chunk_candidates=args.chunk_candidates,
-                       passages=args.passages, batch_size=args.batch_size, legal_weight=args.legal_weight)
+                       passages=args.passages, batch_size=args.batch_size, legal_weight=args.legal_weight,
+                       dense_only=args.mode == "dense", context_radius=args.context_radius,
+                       reranker_max_length=args.reranker_max_length)
     predictions = {}
     diagnostics = {}
     try:
@@ -132,7 +134,7 @@ def parser():
     predict_cli.add_argument("--questions", type=Path, required=True)
     predict_cli.add_argument("--output", type=Path, required=True)
     predict_cli.add_argument("--database", type=Path, default=ROOT / "artifacts/corpus.sqlite")
-    predict_cli.add_argument("--mode", choices=["bm25", "hybrid"], default="bm25")
+    predict_cli.add_argument("--mode", choices=["bm25", "hybrid", "dense"], default="bm25")
     predict_cli.add_argument("--dense", type=Path, default=ROOT / "artifacts/dense")
     predict_cli.add_argument("--models", type=Path, default=ROOT / "models")
     predict_cli.add_argument("--rerank", action="store_true")
@@ -142,6 +144,9 @@ def parser():
     predict_cli.add_argument("--candidates", type=int, default=60)
     predict_cli.add_argument("--chunk-candidates", type=int, default=600)
     predict_cli.add_argument("--passages", type=int, default=2)
+    predict_cli.add_argument("--context-radius", type=int, choices=[0, 1, 2], default=0,
+                             help="Add same-document neighboring chunks around each reranker anchor")
+    predict_cli.add_argument("--reranker-max-length", type=int, default=1536)
     predict_cli.add_argument("--batch-size", type=int, default=4)
     predict_cli.add_argument("--top-k", type=int, choices=range(1, 6), default=5)
     predict_cli.add_argument("--limit", type=int, help="Smoke test only; incomplete output cannot be submitted")

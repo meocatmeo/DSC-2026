@@ -1,5 +1,12 @@
 # UIT DSC 2026 — Task 1 LegalIR
 
+> **A second pipeline, `legalir2/`, now lives alongside this one.** It rebuilds the
+> retrieval stage around article-aware chunking and a BM25F + word-bigram lexical model,
+> and adds the fine-tuning pipeline for the embedder and reranker. Measured on the same
+> 1,050-question validation split: Recall@5 **0.8483** vs **0.7855** here, with candidate
+> recall at 50 of 0.9608 vs 0.9332. Nothing in this file changes; the v1 submission route
+> still works. See `RUNBOOK-v2.md`.
+
 Local legal-document retrieval using **SQLite FTS5 BM25 + Qwen3-Embedding-0.6B +
 Qwen3-Reranker-0.6B**. Output is ranked document IDs, not generated legal answers.
 
@@ -35,6 +42,36 @@ Downloads record immutable revisions and SHA-256 hashes. Archive these local mod
 directories for exact reproduction rather than redownloading a future `main`.
 
 ## Architecture
+
+### Context-window reranking (experimental)
+
+Use `--context-radius 1 --reranker-max-length 3072 --rerank` to give the
+reranker the preceding, matching, and following chunk from the same document.
+Known exact word overlaps and repeated title prefixes are removed. Original
+document order is retained; no external or synthetic content is introduced.
+Radius zero preserves the original input behavior. The dense index does not
+change, so no rebuilding is needed. This is neighboring-window reconstruction,
+not article parsing: it cannot recover headings outside the selected neighborhood.
+Long inputs still truncate at the chosen tokenizer limit. More context increases
+latency/memory and can introduce distracting material; validate before submission.
+The run manifest records both new settings. No pretrained quality gain is claimed.
+
+Controlled Vast.ai comparison (same candidates/passages as dense baseline):
+
+```bash
+cd /workspace/DSC-2026
+source /workspace/DSC-2026/.venv/bin/activate
+python -u -m legalir predict --mode dense --rerank --device cuda --batch-size 4 --candidates 30 --passages 1 --legal-weight 0 --context-radius 1 --reranker-max-length 3072 --questions /workspace/DSC-2026/artifacts/splits/validation.json --output /workspace/DSC-2026/outputs/dense-context-validation.json --evaluate
+```
+
+### Qwen-only candidate retrieval
+
+`predict --mode dense --legal-weight 0` uses Qwen3-Embedding-0.6B cosine
+retrieval without BM25 or lexical phrase adjustments. Build the dense index
+first with `index-dense`. Add `--rerank` for Qwen3-Reranker-0.6B scoring.
+`--mode hybrid` still combines BM25 and Qwen embedding retrieval.
+Embedding inference uses the selected device; vector similarity search remains
+NumPy on CPU. Dense-only quality has not been measured on the real validation set.
 
 ### Experimental legal evidence ranking
 

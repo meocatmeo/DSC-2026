@@ -1,6 +1,6 @@
 import unittest
 
-from legalir.legal import diverse_chunks, folded_terms, phrase_evidence
+from legalir.legal import context_window, diverse_chunks, folded_terms, phrase_evidence
 
 
 class LegalEvidenceTests(unittest.TestCase):
@@ -18,6 +18,20 @@ class LegalEvidenceTests(unittest.TestCase):
     def test_passage_diversity(self):
         texts = {1: "thuế thu nhập cá nhân", 2: "thuế thu nhập cá nhân", 3: "hồ sơ đăng ký xe"}
         self.assertEqual(diverse_chunks([1, 2, 3], texts.__getitem__, 2), [1, 3])
+
+    def test_context_reconstructs_overlap_and_single_title(self):
+        texts = {10: "LAW a b c d", 11: "LAW c d e f", 12: "LAW e f g h", 13: "OTHER secret"}
+        self.assertEqual(context_window([10, 11, 12], 11, texts.__getitem__, "LAW", 2),
+                         "LAW a b c d e f g h")
+        self.assertEqual(context_window([10, 11, 12], 12, texts.__getitem__, "LAW", 2),
+                         "LAW c d e f g h")
+        self.assertEqual(context_window([10], 10, texts.__getitem__, "LAW", 2), "LAW a b c d")
+
+    def test_context_does_not_remove_unmatched_words(self):
+        texts = {1: "a b", 2: "c d"}
+        self.assertEqual(context_window([1, 2], 1, texts.__getitem__, "", 1), "a b c d")
+        with self.assertRaises(ValueError):
+            context_window([1, 2], 3, texts.__getitem__, "", 1)
 
 
 if __name__ == "__main__":
