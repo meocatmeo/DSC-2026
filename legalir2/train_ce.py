@@ -35,6 +35,22 @@ def derived_provenance(base_path, training):
             "training": training}
 
 
+def group_targets(positive_count, group_size, device, torch):
+    """Soft target distribution over one group: mass split evenly across the positives.
+
+    With a single positive this is a one-hot vector and the loss is exactly the softmax
+    cross entropy used before - which is the point. Multi-gold questions are 8.9% of the
+    set but produce 34% of the lost recall, because the scorer gives partial credit for
+    each gold document while the old objective could only name one of them as correct.
+    Splitting the mass says "all of these belong at the top", which is what the metric
+    actually rewards.
+    """
+    rows = torch.zeros(len(positive_count), group_size, device=device)
+    for index, count in enumerate(positive_count):
+        rows[index, :count] = 1.0 / count
+    return rows
+
+
 def load_teacher(path):
     if not path:
         return {}
@@ -49,7 +65,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
           group_size=8, groups_per_step=4, learning_rate=1e-5, max_length=512,
           warmup_ratio=0.05, seed=2026, accumulate=1, checkpointing=True,
           teacher_path=None, distill_weight=0.4, distill_temperature=1.0,
-          max_groups=None):
+          max_groups=None, max_positives=1):
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -70,7 +86,14 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     model.train()
 
     negatives = group_size - 1
-    steps = (len(groups) // groups_per_step) * epochs
+    # cosine_schedule counts *optimizer* steps, and with gradient accumulation the
+    # optimizer advances once per `accumulate` forwards. Sizing the schedule in
+    # forwards silently stretches it: warmup runs `accumulate` times too long and the
+    # cosine only reaches 1/accumulate of its arc, so the learning rate finishes near
+    # its peak instead of near zero and the final weights are a mid-training snapshot.
+    # Nothing in the loss curve shows this - it just trains to a worse checkpoint.
+    forwards = (len(groups) // groups_per_step) * epochs
+    steps = max(1, forwards // max(1, accumulate))
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scheduler = cosine_schedule(optimizer, int(warmup_ratio * steps), max(1, steps))
     started, step, history = time.time(), 0, []
@@ -81,18 +104,28 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
         rng.shuffle(order)
         for start in range(0, len(order) - groups_per_step + 1, groups_per_step):
             batch = [groups[i] for i in order[start:start + groups_per_step]]
-            pairs, teacher_rows, keep = [], [], []
+            pairs, teacher_rows, keep, positive_count = [], [], [], []
             for group in batch:
-                positive = rng.choice(group["positives"])
-                pool = [c for c in group["negatives"] if c != positive]
+                # One passage per gold document, up to max_positives. The group stays
+                # exactly group_size long either way, so the logits still reshape.
+                by_gold = group.get("positives_by_gold") or {}
+                if max_positives > 1 and len(by_gold) > 1:
+                    chosen = list(by_gold.values())[:max_positives]
+                    chunk_positives = [rng.choice(v) for v in chosen]
+                else:
+                    chunk_positives = [rng.choice(group["positives"])]
+                taken = set(chunk_positives)
+                want = group_size - len(chunk_positives)
+                pool = [c for c in group["negatives"] if c not in taken]
                 rng.shuffle(pool)
-                picked = pool[:negatives]
-                if len(picked) < negatives:
+                picked = pool[:want]
+                if len(picked) < want:
                     if not picked:
                         continue
-                    while len(picked) < negatives:
+                    while len(picked) < want:
                         picked.append(rng.choice(pool))
-                chunks = [positive] + picked
+                chunks = chunk_positives + picked
+                positive_count.append(len(chunk_positives))
                 keep.append(group)
                 pairs.extend((group["question"], store.chunk_text(c)) for c in chunks)
                 cache = teacher.get(group["id"], {})
@@ -107,7 +140,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                                 dtype=amp_dtype, enabled=use_amp):
                 logits = model(**inputs).logits
             logits = logits.float().view(len(keep), group_size)
-            targets = torch.zeros(len(keep), dtype=torch.long, device=device)
+            targets = group_targets(positive_count, group_size, device, torch)
             loss = torch.nn.functional.cross_entropy(logits, targets)
             distilled = None
             if any(row is not None for row in teacher_rows):
@@ -142,11 +175,14 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                 optimizer.zero_grad(set_to_none=True)
             step += 1
             if step % 20 == 0:
-                accuracy = (logits.argmax(dim=1) == targets).float().mean().item()
+                # "did the top-scoring candidate come from the positives" - the
+                # multi-positive generalisation of top-1 against a one-hot target.
+                accuracy = (targets.gather(1, logits.argmax(dim=1, keepdim=True))
+                            > 0).float().mean().item()
                 history.append({"step": step, "loss": round(loss.item(), 4),
                                 "top1": round(accuracy, 4),
                                 "kl": round(float(distilled), 4) if distilled is not None else None})
-                print(f"  epoch {epoch} step {step}/{steps} loss {loss.item():.4f} "
+                print(f"  epoch {epoch} step {step}/{forwards} loss {loss.item():.4f} "
                       f"top1 {accuracy:.3f} {time.time() - started:.0f}s", flush=True)
 
     output = Path(output)
@@ -156,10 +192,11 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     tokenizer.save_pretrained(output)
     record = {"base": str(model_path), "groups": len(keep) and len(groups), "epochs": epochs,
                 "group_size": group_size, "groups_per_step": groups_per_step,
+                "max_positives": max_positives,
                 "learning_rate": learning_rate, "max_length": max_length,
                 "teacher": str(teacher_path) if teacher_path else None,
                 "distill_weight": distill_weight if teacher_path else 0,
-                "steps": step, "seconds": round(time.time() - started), "history": history[-50:]}
+                "steps": step, "optimizer_steps": steps, "seconds": round(time.time() - started), "history": history[-50:]}
     write_json(output / "training.json", record)
     write_json(output / "provenance.json", derived_provenance(model_path, record))
     store.close()

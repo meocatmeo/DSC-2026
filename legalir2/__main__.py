@@ -132,6 +132,29 @@ def main(argv=None):
     p.add_argument("--no-dense", action="store_true")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--lexical-settings", default=None)
+    p.add_argument("--settings", default=None,
+                   help="fusion settings JSON, the same string passed to predict. Mining "
+                        "and prediction must agree or the reranker trains on a candidate "
+                        "distribution it never sees at inference")
+
+    p = sub.add_parser("compare", help="paired comparison of two runs' diagnostics")
+    p.add_argument("--before", required=True)
+    p.add_argument("--after", required=True)
+    p.add_argument("--label", default="")
+    p.add_argument("--subset", choices=("all", "single", "multi"), default="all")
+
+    p = sub.add_parser("stack", help="fit the learned rank fusion")
+    add_common(p)
+    p.add_argument("--questions", default=str(ROOT / "artifacts" / "splits" / "train.json"),
+                   help="TRAINING questions. Fitting on validation would tune the "
+                        "combination on the same questions used to judge it")
+    p.add_argument("--limit", type=int, default=2000)
+    p.add_argument("--depth", type=int, default=None,
+                   help="candidates per question; defaults to the pipeline's setting")
+    p.add_argument("--cache", default=str(ROOT / "artifacts2" / "groups" / "stack.jsonl"))
+    p.add_argument("--output", default=str(ROOT / "outputs" / "v4-stacker.json"))
+    p.add_argument("--epochs", type=int, default=300)
+    p.add_argument("--settings", default=None)
 
     p = sub.add_parser("teacher")
     add_common(p)
@@ -163,8 +186,18 @@ def main(argv=None):
     p.add_argument("--learning-rate", type=float, default=1e-5)
     p.add_argument("--max-length", type=int, default=512)
     p.add_argument("--accumulate", type=int, default=1)
-    p.add_argument("--teacher-scores", default=None)
+    p.add_argument("--teacher-scores", default=None,
+                   help="teacher score cache from the `teacher` command. Adds a KL term "
+                        "against the teacher's distribution over each group")
     p.add_argument("--distill-weight", type=float, default=0.4)
+    p.add_argument("--max-positives", type=int, default=1,
+                   help="gold documents treated as positives in one group. 1 reproduces "
+                        "the single-positive objective exactly; >1 splits the target mass "
+                        "across a multi-gold question's documents, which is what the "
+                        "partial-credit scorer actually rewards")
+    p.add_argument("--distill-temperature", type=float, default=1.0,
+                   help="softens both distributions before the KL term; >1 transfers "
+                        "more of the teacher's ordering among the negatives")
     p.add_argument("--max-groups", type=int, default=None)
 
     p = sub.add_parser("predict")
@@ -183,11 +216,19 @@ def main(argv=None):
     # Tuning uses training questions so the validation split stays an unbiased check.
     p.add_argument("--questions", default=str(ROOT / "artifacts" / "splits" / "train.json"))
     p.add_argument("--limit", type=int, default=600)
-    p.add_argument("--stage", choices=("lexical", "fusion"), default="lexical",
+    p.add_argument("--stage", choices=("lexical", "fusion", "rerank"), default="lexical",
                    help="lexical: BM25F and bigram settings (no GPU). "
                         "fusion: how the lexical and dense channels combine (needs a dense index)")
     p.add_argument("--target-depth", type=int, default=100,
                    help="fusion stage: the candidate depth to maximise recall at")
+    p.add_argument("--settings", default=None, help="JSON overrides for pipeline settings")
+    p.add_argument("--context-radius", type=int, nargs="+", default=[0, 1],
+                   help="rerank stage: context radii to try. Each value needs its own "
+                        "scoring pass because it changes the passage text, so this "
+                        "multiplies the sweep's GPU cost by how many you list")
+    p.add_argument("--cache-passages", type=int, default=4,
+                   help="rerank stage: passages per document to score and cache. The "
+                        "sweep cannot test a passages setting above this")
     p.add_argument("--output", default=str(ROOT / "outputs" / "v2-tuning.json"))
 
     p = sub.add_parser("audit")
@@ -264,7 +305,24 @@ def dispatch(args):
         mine(args.store, args.lexical, args.questions, args.output,
              dense_directory=dense, embedding_path=args.embedding_model, device=args.device,
              positives=args.positives, negatives=args.negatives, limit=args.limit,
+             settings=json.loads(args.settings) if args.settings else None,
              lexical_settings=json.loads(args.lexical_settings) if args.lexical_settings else None)
+        return 0
+
+    if args.command == "compare":
+        from .compare import compare
+        for subset in (("all", "single", "multi") if args.subset == "all" else (args.subset,)):
+            compare(args.before, args.after, args.label,
+                    None if subset == "all" else subset)
+        return 0
+
+    if args.command == "stack":
+        from .stack import collect, train
+        if not Path(args.cache).is_file():
+            collect(args, limit=args.limit, output=args.cache, depth=args.depth)
+        else:
+            print(f"  reusing cached features at {args.cache}")
+        train(args.cache, args.output, epochs=args.epochs)
         return 0
 
     if args.command == "teacher":
@@ -290,6 +348,8 @@ def dispatch(args):
               groups_per_step=args.groups_per_step, learning_rate=args.learning_rate,
               max_length=args.max_length, accumulate=args.accumulate,
               teacher_path=args.teacher_scores, distill_weight=args.distill_weight,
+              distill_temperature=args.distill_temperature,
+              max_positives=args.max_positives,
               max_groups=args.max_groups)
         return 0
 
@@ -305,7 +365,12 @@ def dispatch(args):
         return 0
 
     if args.command == "tune":
-        if args.stage == "fusion":
+        if args.stage == "rerank":
+            from .tune import rerank_sweep
+            rerank_sweep(args, limit=args.limit, output=args.output,
+                         depth=args.target_depth, passages=args.cache_passages,
+                         radii=tuple(args.context_radius))
+        elif args.stage == "fusion":
             from .tune import fusion_sweep
             fusion_sweep(args, limit=args.limit, output=args.output, target=args.target_depth)
         else:

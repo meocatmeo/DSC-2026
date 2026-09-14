@@ -73,7 +73,14 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
         return torch.nn.functional.normalize(vectors, p=2, dim=1)
 
     use_amp, amp_dtype, scaler = amp_setup(torch, device)
-    steps = (len(groups) // batch_size) * epochs
+    # cosine_schedule counts *optimizer* steps, and with gradient accumulation the
+    # optimizer advances once per `accumulate` forwards. Sizing the schedule in
+    # forwards silently stretches it: warmup runs `accumulate` times too long and the
+    # cosine only reaches 1/accumulate of its arc, so the learning rate finishes near
+    # its peak instead of near zero and the final weights are a mid-training snapshot.
+    # Nothing in the loss curve shows this - it just trains to a worse checkpoint.
+    forwards = (len(groups) // batch_size) * epochs
+    steps = max(1, forwards // max(1, accumulate))
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scheduler = cosine_schedule(optimizer, int(warmup_ratio * steps), max(1, steps))
     started, step, history = time.time(), 0, []
@@ -118,7 +125,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
                     accuracy = (logits.argmax(dim=1) == targets).float().mean().item()
                 history.append({"step": step, "loss": round(loss.item(), 4),
                                 "in_batch_accuracy": round(accuracy, 4)})
-                print(f"  epoch {epoch} step {step}/{steps} loss {loss.item():.4f} "
+                print(f"  epoch {epoch} step {step}/{forwards} loss {loss.item():.4f} "
                       f"acc {accuracy:.3f} {time.time() - started:.0f}s", flush=True)
 
     output = Path(output)
@@ -128,7 +135,7 @@ def train(store_path, groups_path, model_path, output, device="cuda", epochs=2,
     tokenizer.save_pretrained(output)
     record = {"base": str(model_path), "groups": len(groups), "epochs": epochs,
                 "batch_size": batch_size, "negatives": negatives, "temperature": temperature,
-                "learning_rate": learning_rate, "pooling": pooling, "steps": step,
+                "learning_rate": learning_rate, "pooling": pooling, "steps": step, "optimizer_steps": steps,
                 "seconds": round(time.time() - started), "history": history[-50:]}
     write_json(output / "training.json", record)
     from .train_ce import derived_provenance

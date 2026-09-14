@@ -196,3 +196,133 @@ def fusion_sweep(args, limit=400, output=None, depths=(5, 20, 50, 100, 200), tar
                             "lexical_only": single(0), "dense_only": single(1),
                             "questions": len(cached), "history": history})
     return best, final
+
+
+RERANK_GRID = {
+    "candidates": (30, 50, 75, 100),
+    "passages": (1, 2, 3, 4),
+    "aggregate": ("max", "max_plus", "softmax"),
+    "aggregate_weight": (0.1, 0.2, 0.35),
+    "rerank_blend": (0.0, 0.01, 0.02, 0.05, 0.1),
+}
+
+
+def rerank_sweep(args, limit=400, output=None, depth=100, passages=4, radii=(0, 1)):
+    """Tune the reranking stage by scoring once and sweeping the rest offline.
+
+    Everything after the reranker's forward pass - how many documents it looks at,
+    how many passages per document, how a document's passages become one score, how
+    much of the fusion rank survives - was set by hand and never measured. Each is
+    worth a fraction of a point and together they are worth more than that, but
+    measuring them the obvious way costs a full GPU pass per combination.
+
+    So: score `depth` documents x `passages` passages once per question and cache the
+    raw numbers, then evaluate every combination against the cache. One pass buys
+    hundreds of configurations. `candidates` and `passages` are swept by truncating
+    the cache, which is exact for `candidates` and near-exact for `passages` - a
+    shallower setting picks the same leading passages unless a document runs out of
+    distinct ones, which the reported `prefix_exact` count checks rather than assumes.
+    """
+    # context_radius cannot be swept from a cache. Every other knob reorders numbers
+    # that are already computed, but the radius changes the passage TEXT the reranker
+    # reads, so each value needs its own scoring pass. Sweeping it off one cache would
+    # silently report the radius-0 scores for every setting.
+    results = []
+    for radius in radii:
+        print(f"\n--- context_radius = {radius} "
+              f"({'single chunk' if radius == 0 else f'chunk plus {radius} neighbour(s)'}) ---",
+              flush=True)
+        chosen, recall, baseline = _rerank_pass(args, limit, depth, passages, radius)
+        results.append({"context_radius": radius, "best": dict(chosen, context_radius=radius),
+                        "recall": recall, "baseline": baseline})
+    results.sort(key=lambda r: -r["recall"])
+    winner = results[0]
+    print(f"\n  best overall: context_radius={winner['context_radius']} "
+          f"Recall@5 {winner['recall']:.4f}")
+    for row in results:
+        print(f"    radius {row['context_radius']}: {row['recall']:.4f}")
+    if output:
+        write_json(output, {"best": winner["best"], "recall": winner["recall"],
+                            "by_radius": results, "questions": limit,
+                            "cached_depth": depth, "cached_passages": passages})
+    return winner["best"]
+
+
+def _rerank_pass(args, limit, depth, passages, radius):
+    """One scoring pass at a fixed context radius, then coordinate ascent on the cache."""
+    from .pipeline import Pipeline, final_order
+
+    pipeline = Pipeline(args.store, args.lexical,
+                        dense_directory=args.dense if (Path(args.dense) / "manifest.json").is_file() else None,
+                        embedding_path=args.embedding_model,
+                        reranker_path=args.reranker_model, device=args.device,
+                        settings=dict(json.loads(args.settings) if args.settings else {},
+                                      context_radius=radius))
+    if not pipeline.rerankers:
+        raise ValueError("rerank sweep needs at least one --reranker-model")
+    records = load_questions(args.questions, labeled=True)
+    items = list(records.items())[:limit]
+
+    cached, started, exact, checked = [], time.time(), 0, 0
+    for number, (_, record) in enumerate(items, 1):
+        question = record["question"]
+        fused, prior = pipeline.candidates(question)
+        docs = [d for d, _ in fused[:depth]]
+        cache = {}
+        table = pipeline._rerank(pipeline.rerankers[0], question, docs, prior, cache,
+                                passages=passages)
+        # Spot-check the truncation assumption on the first few questions rather than
+        # trusting it: recomputing a shallower selection must match the cached prefix.
+        if number <= 5:
+            for doc in docs[:10]:
+                checked += 1
+                shallow = pipeline._passages(doc, prior, 2)
+                exact += int(shallow == cache[doc][:2])
+        cached.append((record["answer"], fused[:depth], table))
+        if number % 25 == 0:
+            rate = number / max(1e-6, time.time() - started)
+            print(f"  scored {number}/{len(items)} questions, "
+                  f"eta {(len(items)-number)/max(rate,1e-9)/60:.1f} min", flush=True)
+    base = dict(pipeline.settings)
+    pipeline.close()
+    print(f"  passage-prefix check: {exact}/{checked} shallower selections matched "
+          f"the cached prefix", flush=True)
+
+    def score(settings):
+        rows = [(gold, final_order(fused, [table], settings)[:5])
+                for gold, fused, table in cached]
+        hits = [len(set(gold) & set(top)) / len(gold) for gold, top in rows]
+        return sum(hits) / max(1, len(hits))
+
+    best, history = dict(base), []
+    best["passages"] = min(best["passages"], passages)
+    best["candidates"] = min(best["candidates"], depth)
+    current = score(best)
+    print(f"\n  starting point (what shipped): Recall@5 {current:.4f}  "
+          f"{ {k: best[k] for k in RERANK_GRID} }\n", flush=True)
+    history.append({"settings": {k: best[k] for k in RERANK_GRID}, "recall": round(current, 4)})
+
+    # Coordinate ascent: one knob at a time, two passes. The knobs interact (deeper
+    # candidates change what rerank_blend has to overcome), so a single pass is not
+    # enough and a full grid is 720 evaluations of no extra value.
+    for cycle in range(2):
+        for key, values in RERANK_GRID.items():
+            keep, gain = best[key], current
+            for value in values:
+                if value == best[key] or (key == "candidates" and value > depth) \
+                   or (key == "passages" and value > passages):
+                    continue
+                trial = dict(best, **{key: value})
+                result = score(trial)
+                history.append({"settings": {k: trial[k] for k in RERANK_GRID},
+                                "recall": round(result, 4)})
+                if result > gain:
+                    keep, gain = value, result
+            if gain > current:
+                print(f"  cycle {cycle} {key}: {best[key]} -> {keep}  "
+                      f"Recall@5 {current:.4f} -> {gain:.4f}", flush=True)
+                best[key], current = keep, gain
+    chosen = {k: best[k] for k in RERANK_GRID}
+    print(f"  best at radius {radius}: Recall@5 {current:.4f}  {chosen}")
+    print(f"  gain over what shipped: {current - history[0]['recall']:+.4f}")
+    return chosen, round(current, 4), history[0]

@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+import zlib
 from pathlib import Path
 
 from legalir2 import fuse, lexical, predict, store
@@ -293,7 +294,7 @@ class TestRerankerEnsemble(unittest.TestCase):
         pipeline = Pipeline(self.root / "store.sqlite", self.root / "lexical",
                             settings=dict({"candidates": 3, "passages": 1}, **(settings or {})))
         pipeline.rerankers = rerankers
-        pipeline._passages = lambda doc, prior: [f"passage of {doc}"]
+        pipeline._passages = lambda doc, prior, count=None: [f"passage of {doc}"]
         return pipeline
 
     def test_single_reranker_decides_the_order(self):
@@ -446,3 +447,369 @@ class TestDerivedProvenance(unittest.TestCase):
             with self.assertRaises(ValueError) as raised:
                 verify(root)
             self.assertIn("hash mismatch", str(raised.exception))
+
+
+class TestMiningMatchesInference(unittest.TestCase):
+    """Mining must draw its candidates from the same path prediction uses.
+
+    This is a regression test for a silent failure, not a hypothetical one: mining
+    once had its own min-max blend of the two channels while prediction used weighted
+    RRF, so the reranker was trained to reject one distribution and deployed against
+    another. Nothing errored - the conversion rate just sagged. Asserting that the
+    mined ranking equals Pipeline.candidates() under non-default fusion weights is
+    what makes a future divergence loud.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary.name)
+        store.build(make_corpus(root / "contexts", extra=12), root / "store.sqlite")
+        lexical.build(root / "store.sqlite", root / "lexical")
+        cls.root = root
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def _questions(self, path):
+        from legalir2.store import Store
+        opened = Store(self.root / "store.sqlite")
+        gold = opened.doc_ids[0]
+        text = opened.chunk_text(opened.document_chunk_ids(gold)[0], with_label=False)
+        opened.close()
+        query = " ".join(text.split()[:12])
+        path.write_text(json.dumps({"q1": {"question": query, "answer": [gold]}},
+                                   ensure_ascii=False), encoding="utf-8")
+        return gold, query
+
+    def test_mined_negatives_come_from_the_prediction_ranking(self):
+        from legalir2.mine import mine
+        from legalir2.pipeline import Pipeline
+
+        # Lopsided weights: with a single channel any blend agrees, so the tuned
+        # settings have to demonstrably reach the miner for this to prove anything.
+        settings = {"lexical_weight": 1.5, "rrf_constant": 20, "shortlist": 50}
+        questions = self.root / "questions.json"
+        gold, query = self._questions(questions)
+        output = self.root / "groups" / "train.jsonl"
+        stats = mine(self.root / "store.sqlite", self.root / "lexical", questions, output,
+                     device="cpu", negatives=5, settings=settings)
+        self.assertEqual(stats["questions"], 1, "the single labelled question was dropped")
+        self.assertEqual(stats["fusion"]["lexical_weight"], 1.5,
+                         "tuned fusion settings never reached the miner")
+
+        group = [json.loads(line) for line in output.open(encoding="utf-8")][0]
+        pipeline = Pipeline(self.root / "store.sqlite", self.root / "lexical",
+                            settings=settings)
+        fused, prior = pipeline.candidates(query)
+        expected = [doc for doc, _ in fused[:100] if doc != gold]
+        chunk_document = pipeline.store.chunk_documents()
+        pipeline.close()
+
+        mined = [chunk_document[c] for c in group["negatives"]]
+        self.assertTrue(mined, "no negatives mined")
+        self.assertTrue(set(mined) <= set(expected),
+                        f"mined {mined} from outside the prediction ranking {expected[:10]}")
+        self.assertNotIn(gold, mined, "the gold document was mined as a negative")
+        self.assertTrue(any(prior.get(c, 0.0) for c in group["negatives"]),
+                        "negatives were not selected by the prediction-time chunk prior")
+
+
+class TestRerankSweepMatchesLivePipeline(unittest.TestCase):
+    """The offline sweep must rank identically to the live pipeline.
+
+    A tuner that optimises a slightly different system than the one that ships is
+    worse than no tuner: it produces confident numbers for settings that will not
+    reproduce. This asserts the two agree on the same inputs, for several settings,
+    which is what makes `final_order` worth having as a single shared function.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary.name)
+        store.build(make_corpus(root / "contexts", extra=20), root / "store.sqlite")
+        lexical.build(root / "store.sqlite", root / "lexical")
+        cls.root = root
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def _pipeline(self, settings):
+        from legalir2.pipeline import Pipeline
+        pipeline = Pipeline(self.root / "store.sqlite", self.root / "lexical",
+                            settings=settings)
+        # A deterministic stub scoring each passage as a pure function of its text.
+        # Purity is the point: a stub that also depended on position in the batch
+        # would score the same passage differently in a deeper cache, and would fail
+        # this test for a reason that has nothing to do with the code under test.
+        class Stub:
+            def score(self, query, texts, batch, length):
+                return [(zlib.crc32(t.encode("utf-8")) % 1000) / 100.0 for t in texts]
+            def close(self): pass
+        pipeline.rerankers = [Stub()]
+        return pipeline
+
+    def test_cached_sweep_reproduces_the_live_order(self):
+        from legalir2.pipeline import final_order
+
+        query = "quy định chi tiết về đất đai trên lãnh thổ Việt Nam"
+        for settings in ({"candidates": 8, "passages": 2, "aggregate": "max"},
+                         {"candidates": 5, "passages": 3, "aggregate": "max_plus",
+                          "aggregate_weight": 0.35, "rerank_blend": 0.05},
+                         {"candidates": 10, "passages": 1, "aggregate": "softmax",
+                          "rerank_blend": 0.0}):
+            with self.subTest(settings=settings):
+                live = self._pipeline(dict(settings))
+                expected = live.search(query, top_k=5)
+
+                # The sweep caches deeper and wider than the setting under test, then
+                # truncates - exactly what rerank_sweep does.
+                cache_pipeline = self._pipeline(dict(settings))
+                fused, prior = cache_pipeline.candidates(query)
+                docs = [d for d, _ in fused[:20]]
+                table = cache_pipeline._rerank(cache_pipeline.rerankers[0], query, docs,
+                                               prior, {}, passages=4)
+                merged = dict(cache_pipeline.settings, **settings)
+                actual = final_order(fused, [table], merged)[:5]
+                live.close(); cache_pipeline.close()
+                self.assertEqual(expected, actual,
+                                 f"cached sweep diverged from the live pipeline for {settings}")
+
+
+def _has_torch():
+    try:
+        import torch  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+@unittest.skipUnless(_has_torch(), "torch not installed (CPU-only checkout)")
+class TestMultiPositiveLoss(unittest.TestCase):
+    """The multi-positive objective must be a strict generalisation.
+
+    If it changed single-gold behaviour at all it would be a gamble on 91% of the set to
+    chase the other 9%. Asserting exact equivalence at one positive is what makes it a
+    free bet: the only questions whose training signal changes are the multi-gold ones.
+    """
+
+    def targets(self, counts, group_size):
+        import torch
+        from legalir2.train_ce import group_targets
+        return group_targets(counts, group_size, "cpu", torch)
+
+    def test_one_positive_reproduces_the_old_one_hot_target(self):
+        import torch
+        rows = self.targets([1, 1, 1], 8)
+        expected = torch.nn.functional.one_hot(torch.zeros(3, dtype=torch.long), 8).float()
+        self.assertTrue(torch.equal(rows, expected))
+
+    def test_one_positive_gives_the_identical_loss(self):
+        import torch
+        torch.manual_seed(0)
+        logits = torch.randn(4, 8)
+        old = torch.nn.functional.cross_entropy(
+            logits, torch.zeros(4, dtype=torch.long))
+        new = torch.nn.functional.cross_entropy(logits, self.targets([1] * 4, 8))
+        self.assertAlmostEqual(float(old), float(new), places=6)
+
+    def test_mass_is_split_evenly_and_sums_to_one(self):
+        import torch
+        rows = self.targets([1, 2, 3], 8)
+        self.assertTrue(torch.allclose(rows.sum(dim=1), torch.ones(3)))
+        self.assertAlmostEqual(float(rows[1, 0]), 0.5)
+        self.assertAlmostEqual(float(rows[2, 2]), 1 / 3)
+        self.assertEqual(float(rows[2, 3]), 0.0, "mass leaked past the positives")
+
+    def test_multi_positive_prefers_lifting_every_gold_document(self):
+        """Two golds ranked 1st and 8th must lose to both ranked 1st and 2nd."""
+        import torch
+        targets = self.targets([2], 8)
+        one_high_one_low = torch.tensor([[9.0, -5.0, -5.0, -5.0, -5.0, -5.0, -5.0, 9.0]])
+        both_high = torch.tensor([[9.0, 9.0, -5.0, -5.0, -5.0, -5.0, -5.0, -5.0]])
+        worse = torch.nn.functional.cross_entropy(one_high_one_low, targets)
+        better = torch.nn.functional.cross_entropy(both_high, targets)
+        self.assertLess(float(better), float(worse))
+
+
+class TestLearnedRankFusion(unittest.TestCase):
+    """The stacker must learn from evidence and reach the live pipeline unchanged."""
+
+    def test_it_recovers_a_signal_the_hand_blend_would_bury(self):
+        """A synthetic world where the reranker is wrong and retrieval is right.
+
+        The shipped blend weights the reranker 1.0 and retrieval 0.02, so it follows the
+        reranker off a cliff. A fitted combination should notice which signal predicts
+        the label and reweight. This is the 23 discarded gold documents in miniature.
+        """
+        import numpy as np
+        from legalir2.stack import FEATURES, Stacker, fit
+
+        rng = np.random.default_rng(7)
+        rows = []
+        for _ in range(400):
+            n = 10
+            gold = rng.integers(0, n)
+            matrix = rng.normal(0, 1, (n, len(FEATURES)))
+            matrix[:, FEATURES.index("rr_max")] = rng.normal(0, 1, n)   # pure noise
+            lex = np.zeros(n); lex[gold] = 1.0                          # perfect signal
+            matrix[:, FEATURES.index("lex_rr")] = lex
+            labels = np.zeros(n); labels[gold] = 1.0
+            rows.append((matrix, labels))
+        weights, history = fit(rows, epochs=200, verbose=False)
+        self.assertLess(history[-1], history[0], "the fit did not reduce the loss")
+
+        stacker = Stacker(weights)
+        informative = abs(weights[FEATURES.index("lex_rr")])
+        noise = abs(weights[FEATURES.index("rr_max")])
+        self.assertGreater(informative, noise * 3,
+                           "the fit did not prefer the signal that predicts the label")
+
+        correct = 0
+        for matrix, labels in rows[:100]:
+            correct += int(labels[int(np.argmax(stacker.score(matrix)))] == 1.0)
+        self.assertGreater(correct, 90, f"only {correct}/100 ranked the gold first")
+
+    def test_fitted_weights_change_the_pipeline_order(self):
+        """A stacker in settings must actually decide the final order."""
+        import json, numpy as np
+        from legalir2.pipeline import final_order
+        from legalir2.stack import FEATURES, Stacker
+
+        fused = [("A", 0.9), ("B", 0.5), ("C", 0.1)]
+        channels = {"fused": fused,
+                    "lexical": [("C", 9.0), ("B", 2.0), ("A", 1.0)],
+                    "dense": [("C", 0.9), ("B", 0.4), ("A", 0.2)]}
+        # The reranker loves A; both retrieval channels rank C first.
+        tables = [{"A": [9.0], "B": [1.0], "C": [0.5]}]
+        settings = {"candidates": 3, "passages": 1, "aggregate": "max",
+                    "aggregate_weight": 0.2, "rerank_blend": 0.02,
+                    "stage2_candidates": 25}
+
+        blended = final_order(fused, tables, settings)
+        self.assertEqual(blended[0], "A", "the hand blend should follow the reranker")
+
+        weights = np.zeros(len(FEATURES))
+        weights[FEATURES.index("lex_rr")] = 1.0
+        ordered = final_order(fused, tables, settings,
+                              channels=channels, stacker=Stacker(weights))
+        self.assertEqual(ordered[0], "C", "the stacker did not override the blend")
+        self.assertEqual(sorted(ordered), sorted(["A", "B", "C"]),
+                         "the stacker dropped or duplicated documents")
+
+    def test_a_saved_stacker_round_trips(self):
+        import numpy as np
+        from legalir2.stack import FEATURES, Stacker
+        from legalir2.store import write_json
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stacker.json"
+            weights = np.arange(len(FEATURES), dtype="float64") / 10.0
+            write_json(path, {"features": list(FEATURES), "weights": weights.tolist()})
+            loaded = Stacker.load(path)
+            self.assertTrue(np.allclose(loaded.weights, weights))
+
+    def test_it_refuses_a_weight_vector_of_the_wrong_width(self):
+        from legalir2.stack import Stacker
+        with self.assertRaises(ValueError):
+            Stacker([0.1, 0.2])
+
+
+class TestCheckpointIdentity(unittest.TestCase):
+    """A re-downloaded checkpoint must be recognised as the same checkpoint.
+
+    Regression for a failure that cost a whole unattended run: the dense index compared
+    entire provenance dicts, which include `seconds` - the download duration. Fetching
+    the same weights again produced a different number, so every restored index was
+    rejected as "built with a different checkpoint" and three stages died in a row.
+    """
+
+    def identity(self, provenance):
+        from legalir2.models import checkpoint_identity
+        return checkpoint_identity(provenance)
+
+    def _downloaded(self, seconds, commit="abc123", digest="deadbeef"):
+        return {"repository": "AITeamVN/Vietnamese_Embedding_v2", "revision": "main",
+                "commit": commit, "endpoint": "https://huggingface.co",
+                "seconds": seconds,
+                "files": {"model.safetensors": {"sha256": digest, "bytes": 1140000000}}}
+
+    def test_download_duration_does_not_change_identity(self):
+        self.assertEqual(self.identity(self._downloaded(47)),
+                         self.identity(self._downloaded(112)))
+
+    def test_different_commit_is_a_different_checkpoint(self):
+        self.assertNotEqual(self.identity(self._downloaded(47)),
+                            self.identity(self._downloaded(47, commit="999fff")))
+
+    def test_different_weights_are_a_different_checkpoint(self):
+        self.assertNotEqual(self.identity(self._downloaded(47)),
+                            self.identity(self._downloaded(47, digest="cafe")))
+
+    def test_a_fine_tuned_checkpoint_is_not_its_base(self):
+        derived = {"derived_from": self._downloaded(47), "training": {"base": "models2/embedding"}}
+        self.assertNotEqual(self.identity(derived), self.identity(self._downloaded(47)))
+
+    def test_an_old_index_without_model_identity_still_validates(self):
+        """Indexes built before this field existed must not be condemned by its absence."""
+        from legalir2.models import checkpoint_identity
+        manifest = {"model": self._downloaded(47)}          # no model_identity key
+        expected = manifest.get("model_identity") or checkpoint_identity(manifest["model"])
+        self.assertEqual(expected, self.identity(self._downloaded(999)))
+
+
+class TestPairedComparison(unittest.TestCase):
+    """Paired testing must call a real change real and a noisy one noise."""
+
+    def _diagnostics(self, scores):
+        return {str(i): {"relevant": ["g"], "predicted": ["g"] if s else ["x"],
+                         "question": "q", "candidate_ranks": {}}
+                for i, s in enumerate(scores)}
+
+    def _run(self, before, after, **kwargs):
+        from legalir2.compare import compare
+        import io, contextlib, json, tempfile
+        with tempfile.TemporaryDirectory() as d:
+            bp, ap = Path(d) / "b.json", Path(d) / "a.json"
+            bp.write_text(json.dumps(self._diagnostics(before)))
+            ap.write_text(json.dumps(self._diagnostics(after)))
+            with contextlib.redirect_stdout(io.StringIO()):
+                return compare(bp, ap, resamples=2000, **kwargs)
+
+    def test_a_handful_of_flips_either_way_is_called_noise(self):
+        """Balanced churn: 10 questions fixed, 10 broken. Net zero, and it must say so.
+
+        The flips have to be balanced BY CONSTRUCTION. Flipping random indices in a
+        95%-correct vector overwhelmingly breaks correct answers, which is a genuine
+        regression - an earlier version of this test did exactly that and the code was
+        right to call it one.
+        """
+        before = [1] * 950 + [0] * 50
+        after = list(before)
+        for i in range(10):                         # 10 correct answers broken
+            after[i] = 0
+        for i in range(950, 960):                   # 10 wrong answers fixed
+            after[i] = 1
+        result = self._run(before, after)
+        self.assertLessEqual(result["ci"][0], 0.0)
+        self.assertGreaterEqual(result["ci"][1], 0.0)
+
+    def test_a_consistent_one_sided_gain_is_detected(self):
+        before = [1] * 900 + [0] * 100
+        after = [1] * 960 + [0] * 40               # 60 questions fixed, none broken
+        result = self._run(before, after)
+        self.assertGreater(result["ci"][0], 0.0, "a real 60-question gain was called noise")
+        self.assertLess(result["p"], 0.01)
+
+    def test_pairing_beats_comparing_means(self):
+        """The whole reason this module exists."""
+        import math
+        before = [1] * 900 + [0] * 100
+        after = [1] * 920 + [0] * 80               # +0.020, ~2.7 s.e. of a single mean
+        result = self._run(before, after)
+        unpaired = math.sqrt(0.9 * 0.1 / 1000) * 1.96 * 2
+        paired = result["ci"][1] - result["ci"][0]
+        self.assertLess(paired, unpaired,
+                        "the paired interval should be tighter than the unpaired one")

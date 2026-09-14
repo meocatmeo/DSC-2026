@@ -27,9 +27,35 @@ gate() { printf '\n>>> GATE: %s\n\n' "$*"; }
 done_already() { [ "$FORCE" = "0" ] && [ -e "$1" ]; }
 timed() { local l="$1"; shift; step "$l ..."; local t=$SECONDS; "$@"; step "$l finished in $((SECONDS-t))s"; }
 
+# Measuring the validation split costs ~16 min of GPU time and is deterministic: on a
+# re-run the answer is already on disk, and re-deriving it changes nothing except how
+# long you wait to resume. A finished measurement is therefore skipped exactly like a
+# finished index or checkpoint, and its recorded number is printed instead. Without
+# this, "safe to re-run" quietly costs an hour across the four stages - which is the
+# difference between resuming being free and resuming being something you avoid.
+measure() {
+  local label="$1" out="$2"; shift 2
+  local metrics="${out%.json}.metrics.json"
+  if done_already "$metrics"; then
+    step "$label already measured; FORCE=1 to redo"
+    "$PY" -c "
+import json; m = json.load(open('$metrics')); c = m.get('candidate_recall', {})
+print(f\"  Recall@5 {m['recall']:.4f}   candidate recall @50 {c.get('@50','-')} @100 {c.get('@100','-')}\")"
+    return 0
+  fi
+  timed "$label" "$PY" -m legalir2 predict --evaluate "$@" --output "$out"
+}
+
 # Fusion settings chosen by `tune --stage fusion`, as a --settings JSON string.
+#
+# Each embedder gets its OWN file. They used to share one, which meant the biencoder
+# stage overwrote the base embedder's weights with weights fitted against the tuned
+# index - harmless in a single forward pass, wrong the moment anything re-measured the
+# base index afterwards, which resuming makes likely. Two files, no aliasing.
+BASE_FUSION="outputs/v2-fusion-tuning.json"
+TUNED_FUSION="outputs/v2-fusion-tuning-embedder.json"
 fusion_settings() {
-  local file="outputs/v2-fusion-tuning.json"
+  local file="${1:-$BASE_FUSION}"
   if [ -f "$file" ]; then
     "$PY" -c "import json;b=json.load(open('$file'))['best'];print(json.dumps(b))"
   else
@@ -57,14 +83,17 @@ stage_dense() {
 
   say "tune how the two channels fuse (~15 min, mostly the dense forward pass)"
   step "not optional: after in-domain tuning, naive fusion degrades more often than it helps"
-  timed "tune fusion" "$PY" -m legalir2 tune --stage fusion --limit 400 --target-depth 100 \
-      --output outputs/v2-fusion-tuning.json
+  if done_already "$BASE_FUSION"; then
+    step "already tuned: $(fusion_settings)"
+  else
+    timed "tune fusion" "$PY" -m legalir2 tune --stage fusion --limit 400 --target-depth 100 \
+        --output "$BASE_FUSION"
+  fi
 
   say "measure: dense added, reranker unchanged"
-  timed "predict validation" "$PY" -m legalir2 predict --evaluate \
+  measure "predict validation" outputs/v2-dense-ce.json \
       --reranker-model models2/reranker-tuned \
-      --settings "$(fusion_settings)" \
-      --output outputs/v2-dense-ce.json
+      --settings "$(fusion_settings)"
   "$PY" - <<'REPORT'
 import json
 m = json.load(open("outputs/v2-dense-ce.metrics.json"))
@@ -81,15 +110,39 @@ REPORT
 }
 
 stage_rerank() {
+  # The base checkpoint is what fine-tuning starts from, and gpu-restore.sh only brings
+  # back the *trained* weights. Check it here rather than after 11 minutes of mining -
+  # transformers reports a missing local path as an HFValidationError about repo ids,
+  # which sends you looking for a network problem that does not exist.
+  if [ ! -f models2/reranker/config.json ]; then
+    step "base reranker missing - fetching it before anything expensive runs"
+    unset HF_HUB_OFFLINE TRANSFORMERS_OFFLINE || true
+    timed "download reranker" "$PY" -m legalir2 download --which reranker
+    timed "verify hashes" "$PY" -m legalir2 verify-models
+  fi
+  export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+
   say "re-mine with many more negatives, now using both channels"
   step "group size 8 -> 32 is a continuous gain in the literature, and costs no extra VRAM"
   if done_already artifacts2/groups/train-r2.jsonl; then
     step "already mined"
   else
     timed "mine round two" "$PY" -m legalir2 mine --negatives 31 \
+        --settings "$(fusion_settings)" \
         --output artifacts2/groups/train-r2.jsonl
   fi
   cat artifacts2/groups/train-r2.stats.json
+  "$PY" - <<'CHECK'
+import json, sys
+stats = json.load(open("artifacts2/groups/train-r2.stats.json"))
+if "fusion" not in stats:
+    sys.exit("\n  STOP: these groups were mined by the old miner, which used its own\n"
+             "  blend of the two channels instead of the ranking prediction uses.\n"
+             "  Training on them repeats the mistake. Delete and re-mine:\n"
+             "      rm artifacts2/groups/train-r2.*\n")
+print(f"\n  mined through the prediction path, fusion = {stats['fusion']}, "
+      f"dense = {stats['dense']}")
+CHECK
 
   say "retrain the cross encoder at group size 32 (~2 h)"
   step "32 x 1 per step = the same 32 pairs per forward as 8 x 4, so VRAM is unchanged"
@@ -103,11 +156,20 @@ stage_rerank() {
   fi
 
   say "measure"
-  timed "predict validation" "$PY" -m legalir2 predict --evaluate \
+  measure "predict validation" outputs/v2-g32.json \
       --reranker-model models2/reranker-g32 \
-      --settings "$(fusion_settings)" \
-      --output outputs/v2-g32.json
+      --settings "$(fusion_settings)"
   compare outputs/v2-dense-ce.metrics.json outputs/v2-g32.metrics.json "group size 32"
+
+  say "ensemble the two rerankers - they disagree on different questions, and the"
+  step "old one is already paid for. Wide pass by g32, top 25 rescored by both."
+  measure "predict validation" outputs/v2-ens.json \
+      --reranker-model models2/reranker-g32 models2/reranker-tuned \
+      --settings "$(fusion_settings)"
+  compare outputs/v2-g32.metrics.json outputs/v2-ens.metrics.json "+ ensemble"
+  "$PY" -m legalir2 audit --reranker-model models2/reranker-g32 models2/reranker-tuned \
+      2>/dev/null || step "run 'audit' yourself before submitting an ensemble - two "\
+"rerankers plus the embedder must still total under 4B parameters"
   gate "this should be the largest single jump of phase two. If it is flat or worse,
      suspect the mined negatives: read train-r2.stats.json and compare 'missed' and
      'pruned' against the round-one file before training anything else."
@@ -133,16 +195,19 @@ stage_biencoder() {
   fi
 
   say "re-tune fusion - the old weights were fitted against the old embedder"
-  timed "tune fusion" "$PY" -m legalir2 tune --stage fusion --limit 400 --target-depth 100 \
-      --embedding-model models2/embedding-tuned --dense artifacts2/dense-tuned \
-      --output outputs/v2-fusion-tuning.json
+  if done_already "$TUNED_FUSION"; then
+    step "already tuned: $(fusion_settings "$TUNED_FUSION")"
+  else
+    timed "tune fusion" "$PY" -m legalir2 tune --stage fusion --limit 400 --target-depth 100 \
+        --embedding-model models2/embedding-tuned --dense artifacts2/dense-tuned \
+        --output "$TUNED_FUSION"
+  fi
 
   say "measure"
-  timed "predict validation" "$PY" -m legalir2 predict --evaluate \
+  measure "predict validation" outputs/v2-bi-tuned.json \
       --embedding-model models2/embedding-tuned --dense artifacts2/dense-tuned \
       --reranker-model models2/reranker-g32 \
-      --settings "$(fusion_settings)" \
-      --output outputs/v2-bi-tuned.json
+      --settings "$(fusion_settings "$TUNED_FUSION")"
   compare outputs/v2-g32.metrics.json outputs/v2-bi-tuned.metrics.json "tuned bi-encoder"
   gate "if candidate recall @100 is now >= 0.985, 0.96 is live. If it stalled near 0.975,
      the remaining misses are probably label noise rather than retrieval failures -
@@ -151,13 +216,14 @@ stage_biencoder() {
 
 stage_final() {
   say "deeper shortlist, two-stage rerank"
-  timed "predict validation" "$PY" -m legalir2 predict --evaluate \
+  measure "predict validation" outputs/v2-deep.json \
       --embedding-model models2/embedding-tuned --dense artifacts2/dense-tuned \
       --reranker-model models2/reranker-g32 \
       --settings "$("$PY" -c "
-import json;b=json.load(open('outputs/v2-fusion-tuning.json'))['best']
-b.update(candidates=100, passages=4); print(json.dumps(b))")" \
-      --output outputs/v2-deep.json
+import json, os
+path = '$TUNED_FUSION' if os.path.isfile('$TUNED_FUSION') else '$BASE_FUSION'
+b = json.load(open(path))['best']
+b.update(candidates=100, passages=4); print(json.dumps(b))")"
   compare outputs/v2-bi-tuned.metrics.json outputs/v2-deep.metrics.json "candidates=100 passages=4"
 
   say "pick the best configuration and submit it"

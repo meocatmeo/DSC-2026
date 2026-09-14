@@ -36,6 +36,30 @@ def pooling_for(model_type):
     return "last"
 
 
+def checkpoint_identity(provenance):
+    """The part of a provenance record that says WHICH weights these are.
+
+    Deliberately excludes `seconds` - how long the download took - and `endpoint`.
+    Comparing whole provenance dicts to decide whether two checkpoints match means
+    comparing a stopwatch reading, so re-downloading the same weights produces a
+    "different" checkpoint and anything built against it (a dense index, say) is
+    rejected as stale. Identity is the repository, the resolved commit, and the file
+    hashes; everything else is a note about the download, not about the model.
+    """
+    if not provenance:
+        return {}
+    if "derived_from" in provenance:
+        return {"derived_from": checkpoint_identity(provenance["derived_from"]),
+                "training": provenance.get("training", {}).get("base")}
+    keep = {k: provenance[k] for k in ("repository", "revision", "commit") if k in provenance}
+    files = provenance.get("files")
+    if files:
+        keep["files"] = {name: record.get("sha256") for name, record in sorted(files.items())}
+    elif "path" in provenance:
+        keep["path"] = provenance["path"]
+    return keep
+
+
 def context_limit(config, tokenizer=None):
     """The longest sequence this checkpoint can actually accept.
 
@@ -140,6 +164,7 @@ class Local:
         self.context_limit = context_limit(self.config, self.tokenizer)
         self.provenance = (read_json(path / "provenance.json")
                            if (path / "provenance.json").is_file() else {"path": str(path)})
+        self.identity = checkpoint_identity(self.provenance)
 
     def close(self):
         del self.model

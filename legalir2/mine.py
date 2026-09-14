@@ -20,8 +20,6 @@ import random
 import time
 from pathlib import Path
 
-import numpy as np
-
 from .store import Store, read_json, write_json
 
 TIERS = ((0, 10), (10, 30), (30, 100))
@@ -38,17 +36,25 @@ def jaccard(first, second):
 def mine(store_path, lexical_directory, questions_path, output,
          dense_directory=None, embedding_path=None, device="cuda",
          positives=2, negatives=12, depth=100, duplicate_threshold=0.9, seed=2026,
-         lexical_settings=None, limit=None):
-    from .lexical import Lexical
+         lexical_settings=None, limit=None, settings=None):
+    """Mine training groups through the *inference* candidate path.
 
-    store = Store(store_path)
-    lexical = Lexical(lexical_directory, lexical_settings)
+    The negatives a reranker learns to reject are only useful if they are the
+    passages it will actually be asked to reject. Mining through its own private
+    blend of the two channels - which is what this did originally - trains the model
+    on one distribution and deploys it against another, and the cost is invisible:
+    every number still looks reasonable, the reranker just quietly converts fewer of
+    the candidates it is given. So the candidate list here comes from Pipeline,
+    reranker unloaded, with the same tuned fusion settings prediction will use.
+    """
+    from .pipeline import Pipeline
+
+    pipeline = Pipeline(store_path, lexical_directory, dense_directory=dense_directory,
+                        embedding_path=embedding_path, reranker_path=None, device=device,
+                        settings=settings, lexical_settings=lexical_settings)
+    store = pipeline.store
+    lexical = pipeline.lexical
     positions = {int(c): i for i, c in enumerate(lexical.unigram.chunk_ids)}
-    dense = None
-    if dense_directory:
-        from .dense import DenseIndex
-        dense = DenseIndex(dense_directory, store_path, embedding_path, device=device)
-        dense_positions = {int(c): i for i, c in enumerate(dense.chunk_ids)}
 
     records = read_json(questions_path)
     items = list(records.items())[:limit] if limit else list(records.items())
@@ -63,27 +69,37 @@ def mine(store_path, lexical_directory, questions_path, output,
         if not gold:
             stats["skipped"] += 1
             continue
-        scores = lexical.chunk_scores(question)
-        if dense:
-            dense_scores = dense.scores(question)
-            combined = np.zeros(len(scores), dtype="float32")
-            for chunk, index in dense_positions.items():
-                combined[positions[chunk]] = dense_scores[index]
-            scores = _blend(scores, combined)
-        picks = lexical.top_chunks(scores, lexical.settings["chunk_candidates"])
-        ranked = lexical.documents(picks, scores)
-        rank_of = {doc: rank for rank, (doc, _) in enumerate(ranked[:depth])}
+        fused, prior = pipeline.candidates(question)
+        rank_of = {doc: rank for rank, (doc, _) in enumerate(fused[:depth])}
+        # Fallback only: a gold document fusion never surfaced has no prior, so its
+        # best passage is chosen lexically rather than dropping the hardest questions.
+        fallback = lexical.chunk_scores(question)
 
-        positive_chunks = []
-        for doc in gold:
-            chunk_ids = store.document_chunk_ids(doc)
+        def rank_chunks(doc):
+            chunk_ids = [c for c in store.document_chunk_ids(doc) if c in positions]
             if not chunk_ids:
-                continue
-            values = [(float(scores[positions[c]]), c) for c in chunk_ids if c in positions]
-            values.sort(key=lambda x: (-x[0], x[1]))
-            positive_chunks.extend(c for _, c in values[:positives])
+                return []
+            if any(prior.get(c, 0.0) for c in chunk_ids):
+                key = lambda c: (-prior.get(c, 0.0), c)
+            else:
+                key = lambda c: (-float(fallback[positions[c]]), c)
+            return sorted(chunk_ids, key=key)
+
+        # Positives are kept grouped BY gold document, not pooled into one flat list.
+        # 8.9% of questions have two or more gold documents and the scorer gives partial
+        # credit for each, but a flat list cannot express "these three are all correct" -
+        # it can only be sampled from, which is what trains the model to rank one of them
+        # first and forget the rest. The flat list is still emitted for compatibility.
+        by_gold, positive_chunks = {}, []
+        for doc in gold:
+            picked = rank_chunks(doc)[:positives]
+            if picked:
+                by_gold[doc] = picked
+                positive_chunks.extend(picked)
             if doc not in rank_of:
                 stats["missed"] += 1
+        stats.setdefault("multi_gold", 0)
+        stats["multi_gold"] += int(len(by_gold) > 1)
         if not positive_chunks:
             stats["skipped"] += 1
             continue
@@ -108,10 +124,10 @@ def mine(store_path, lexical_directory, questions_path, output,
 
         negative_chunks = []
         for doc in chosen:
-            chunk_ids = [c for c in store.document_chunk_ids(doc) if c in positions]
-            if not chunk_ids:
+            ordered = rank_chunks(doc)
+            if not ordered:
                 continue
-            best = max(chunk_ids, key=lambda c: (float(scores[positions[c]]), -c))
+            best = ordered[0]
             bag = token_set(store.chunk_text(best, with_label=False))
             if any(jaccard(bag, other) > duplicate_threshold for other in positive_bags):
                 stats["pruned"] += 1
@@ -122,6 +138,7 @@ def mine(store_path, lexical_directory, questions_path, output,
             continue
         stream.write(json.dumps({"id": qid, "question": question, "gold": gold,
                                  "positives": positive_chunks,
+                                 "positives_by_gold": {str(k): v for k, v in by_gold.items()},
                                  "negatives": negative_chunks[:negatives],
                                  "gold_ranks": {d: rank_of.get(d) for d in gold}},
                                 ensure_ascii=False) + "\n")
@@ -130,21 +147,14 @@ def mine(store_path, lexical_directory, questions_path, output,
             print(f"  mined {number}/{len(items)} questions {time.time() - started:.0f}s",
                   flush=True)
     stream.close()
-    if dense:
-        dense.close()
-    store.close()
+    pipeline.close()
     stats["seconds"] = round(time.time() - started)
+    stats["fusion"] = {k: pipeline.settings[k]
+                       for k in ("lexical_weight", "dense_weight", "rrf_constant")}
+    stats["dense"] = bool(dense_directory)
     write_json(output.with_suffix(".stats.json"), stats)
     print(f"Mined {stats['questions']} groups: {stats}")
     return stats
-
-
-def _blend(lexical_scores, dense_scores):
-    """Rank free blend used only for mining, so one channel cannot dominate."""
-    def unit(values):
-        low, high = float(values.min()), float(values.max())
-        return (values - low) / ((high - low) or 1.0)
-    return unit(lexical_scores) + unit(dense_scores)
 
 
 def _quota(total, buckets):

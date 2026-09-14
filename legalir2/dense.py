@@ -87,6 +87,7 @@ def build(store_path, model_path, directory, device="cuda", batch_size=16, max_l
         vectors.flush()
         np.save(directory / "chunk_ids.npy", np.asarray(ids, dtype="int64"))
         manifest = {"store_sha256": file_hash(store_path), "model": embedder.local.provenance,
+                    "model_identity": embedder.local.identity,
                     "parameters": embedder.parameters, "dimension": embedder.dimension,
                     "chunks": count, "max_length": max_length, "pooling": embedder.pooling,
                     "seconds": round(time.time() - started)}
@@ -109,12 +110,25 @@ class DenseIndex:
     def __init__(self, directory, store_path, model_path, device="cuda", block=200_000,
                  resident_limit=2 << 30):
         directory = Path(directory)
+        self.directory = directory
         self.manifest = read_json(directory / "manifest.json")
         if self.manifest["store_sha256"] != file_hash(store_path):
             raise ValueError("Dense index was built from a different chunk store; rebuild it")
         self.embedder = Embedder(model_path, device=device)
-        if self.embedder.local.provenance != self.manifest["model"]:
-            raise ValueError("Embedding checkpoint differs from the one the index was built with")
+        # Compare identity, not the whole provenance record. Indexes built before
+        # model_identity existed fall back to deriving it from the stored provenance, so
+        # an old index on disk still validates rather than being condemned by a field
+        # that was never about the weights.
+        from .models import checkpoint_identity
+        expected = self.manifest.get("model_identity") or checkpoint_identity(self.manifest["model"])
+        if self.embedder.local.identity != expected:
+            raise ValueError(
+                "Embedding checkpoint differs from the one the index was built with.\n"
+                f"  index built with : {expected}\n"
+                f"  loaded checkpoint: {self.embedder.local.identity}\n"
+                "  If these name the same repository and commit, the index is fine and "
+                "this is a bug; if they differ, rebuild the index or point --embedding-model "
+                "at the checkpoint the index was built from.")
         self.vectors = np.load(directory / "vectors.npy", mmap_mode="r")
         self.chunk_ids = np.load(directory / "chunk_ids.npy")
         if self.vectors.shape != (self.manifest["chunks"], self.manifest["dimension"]):
