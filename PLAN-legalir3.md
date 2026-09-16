@@ -1,3 +1,11 @@
+> **FALSIFIED — superseded by `PLAN-legalir4.md`.**
+>
+> The thesis below is that retrieval was the untouched half and would pay twice. It was
+> tested: a tuned embedder raises candidate recall@5 by +0.0257, and the finished system
+> moves by −0.0006 with 1,019 of 1,050 predictions identical. Retrieval and reranking are
+> substitutes in this pipeline, not complements. Kept as a record of the reasoning and
+> of what the measurement showed.
+
 # legalir3 — stop reranking, start retrieving
 
 legalir2 ends at **0.9493**. Seven interventions were measured after it and every one

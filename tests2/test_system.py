@@ -1008,6 +1008,53 @@ class TestScoreCache(unittest.TestCase):
                                      {d for d in row.get("gold_ranks", {})
                                       if d not in row["gold"]})
 
+    def test_the_second_reranker_actually_reaches_the_stacker(self):
+        """A second reranker must change the features, and therefore the ranking.
+
+        `build_features` read `passage_scores[0]` and nothing else, so with a stacker
+        active a second model was scored, paid for and discarded. Two experiments were
+        spent on that: a 1.88B reranker measured through a fusion fitted on the 0.6B's
+        scores, and an ensemble whose significant +0.0086 collapsed to +0.0003 with
+        1,030 of 1,050 predictions identical. That last number is the tell - a model
+        with no effect produces exactly the old ranking.
+        """
+        import numpy as np
+        from legalir2.stack import FEATURES, Stacker, build_features, feature_names
+
+        docs = [f"d{i}" for i in range(8)]
+        channels = {"lexical": [(d, 1.0 - 0.1 * i) for i, d in enumerate(docs)],
+                    "dense": [(d, 0.9 - 0.1 * i) for i, d in enumerate(reversed(docs))],
+                    "fused": [(d, 0.8 - 0.1 * i) for i, d in enumerate(docs)]}
+        first = {d: [1.0 - 0.1 * i, 0.5] for i, d in enumerate(docs)}
+        second = {d: [0.2 * i, 0.1] for i, d in enumerate(docs)}    # the opposite opinion
+
+        one = build_features(docs, [first], channels)
+        two = build_features(docs, [first, second], channels)
+        self.assertEqual(one.shape[1], len(FEATURES))
+        self.assertEqual(two.shape[1], len(feature_names(2)))
+
+        # The original twelve columns must be untouched, or every stacker fitted before
+        # this change silently means something different.
+        self.assertTrue(np.allclose(one, two[:, :len(FEATURES)]),
+                        "the single-reranker feature block moved")
+
+        names = feature_names(2)
+        def ranked_by(name):
+            weights = np.zeros(len(names))
+            weights[names.index(name)] = 1.0
+            return Stacker(weights, names).order(docs, [first, second], channels)
+
+        self.assertEqual(ranked_by("rr_max")[0], "d0")
+        self.assertEqual(ranked_by("rr_max_2")[0], "d7",
+                         "the second reranker's scores do not reach the ranking")
+
+        # A 12-weight stacker over a two-reranker pipeline is the exact bug. Refuse it
+        # rather than quietly reproducing the single-model ranking.
+        with self.assertRaises(ValueError):
+            Stacker(np.zeros(len(FEATURES))).order(docs, [first, second], channels)
+        # ... while still working over a one-reranker pipeline.
+        Stacker(np.zeros(len(FEATURES))).order(docs, [first], channels)
+
     def test_duplicate_groups_reports_only_repeats(self):
         from legalir2.cache import duplicate_groups
         groups = duplicate_groups({"1": "Thuế thu nhập?", "2": "thuế thu nhập",

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # legalir3, stage one: fix the retrieval half.
 #
-#   bash gpu-legalir3.sh baseline   # ~20 min  candidate recall as it stands today
+#   bash gpu-legalir3.sh quick      # ~40 min  tuned embedder + stacker - NO training
+#   bash gpu-legalir3.sh refit      # ~45 min  refit the stacker on the tuned pipeline
+#   bash gpu-legalir3.sh baseline   # ~5 min   candidate recall as it stands today
 #   bash gpu-legalir3.sh mine       # ~30 min  negatives from the DENSE channel
-#   bash gpu-legalir3.sh train      # ~2 h     fine-tune the bi-encoder on them
+#   bash gpu-legalir3.sh train      # ~50 min  fine-tune the bi-encoder on them
 #   bash gpu-legalir3.sh index      # ~1.2 h   rebuild the dense index
-#   bash gpu-legalir3.sh measure    # ~25 min  paired candidate recall vs baseline
+#   bash gpu-legalir3.sh measure    # ~5 min   paired candidate recall vs baseline
 #   bash gpu-legalir3.sh endtoend   # ~20 min  only after measure says something moved
 #   bash gpu-legalir3.sh            # baseline through measure
 #
@@ -66,9 +68,119 @@ JSON
 DENSE_NOW=(--dense artifacts2/dense --embedding-model "$EMBEDDER")
 DENSE_NEW=(--dense "$INDEX" --embedding-model "$TUNED")
 
+# ------------------------------------------------- 0. the cell nobody measured
+# Phase two and phase four both built a tuned embedder and a dense index to match, and
+# both measured it WITHOUT a stacker:
+#
+#   run           emb    stk  cand@5   @50     final   conversion
+#   v4-stacked    base   yes  0.8914  0.9805  0.9454     61%
+#   v4-ceiling    TUNED  no   0.9133  0.9856  0.9349     30%
+#   v2-bi-tuned   TUNED  no   0.9171  0.9833  0.9333     25%
+#
+# The tuned embedder is a large retrieval win - +0.0257 of candidate recall@5, three
+# times anything the reranker work ever produced - and it lost end to end all three
+# times, because the reranker's conversion halved. A reranker that is right most of the
+# time improves a weak ordering and damages a strong one: it demotes gold the better
+# fusion had already placed.
+#
+# The stacker is the component that arbitrates exactly that. It reads fused_rr, lex_rr
+# and den_rr beside the reranker's scores, so it can learn when to trust the retrieval
+# order over the model. On the base pipeline it is worth +0.008; on a pipeline whose
+# retrieval features are much stronger it should be worth more.
+#
+# outputs/v4-stacker-tuned.json was fitted and then never loaded by the ceiling stage.
+# This runs that pairing. No training, ~40 min, every artefact already exists.
+FUSION_TUNED="${FUSION_TUNED:-outputs/v4-fusion-tuned-embedder.json}"
+STACKER_TUNED="${STACKER_TUNED:-outputs/v4-stacker-tuned.json}"
+EMB_TUNED="${EMB_TUNED:-models2/embedding-tuned}"
+IDX_TUNED="${IDX_TUNED:-artifacts2/dense-tuned}"
+
+BLEND_TUNED() {
+  "$PY" - "$FUSION_TUNED" "$@" <<'JSON'
+import json, sys
+from pathlib import Path
+source = Path(sys.argv[1])
+if not source.is_file():                      # fall back through what phase 2 left
+    for name in ("outputs/v2-fusion-tuning-embedder.json", "outputs/v2-fusion-tuning.json"):
+        if Path(name).is_file():
+            source = Path(name)
+            break
+out = json.loads(source.read_text())["best"]
+out["stacker"] = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] else None
+print(json.dumps(out))
+JSON
+}
+
+stage_quick() {
+  stage_now "quick"
+  say "the untested cell: tuned embedder WITH a stacker (~40 min, no training)"
+
+  command -v rclone >/dev/null && for item in \
+      "models/embedding-tuned:$EMB_TUNED" "models/reranker-tuned-idx:models2/reranker-tuned-idx" \
+      "dense-tuned:$IDX_TUNED"; do
+    local remote="${item%%:*}" local_path="${item#*:}"
+    [ -e "$local_path/config.json" ] || [ -e "$local_path/manifest.json" ] || {
+      step "restoring $local_path from Drive"
+      rclone copy "$RESULTS/$remote" "$local_path" -P --transfers 4 || true; }
+  done
+  [ -f "$STACKER_TUNED" ] || rclone copy "$RESULTS/outputs/$(basename "$STACKER_TUNED")" outputs -P 2>/dev/null || true
+
+  local missing=0
+  for f in "$EMB_TUNED/config.json" "$IDX_TUNED/manifest.json" "$STACKER_TUNED"; do
+    [ -e "$f" ] || { step "MISSING $f"; missing=1; }
+  done
+  [ "$missing" = 0 ] || { step "cannot run without those - they are in Drive from phase 2/4"; return 1; }
+
+  step "the stacker was fitted for SOME pipeline; if it was the base one its weights are"
+  step "calibrated to the wrong score distribution and the 'refit' stage below is the fix."
+  for reranker in models2/reranker-tuned-idx models2/reranker-g32; do
+    [ -f "$reranker/config.json" ] || { step "skipping $reranker (not present)"; continue; }
+    local tag; tag="l3q-$(basename "$reranker")"
+    say "$(basename "$reranker") + tuned embedder + tuned stacker"
+    if ! done_already "outputs/$tag.metrics.json"; then
+      timed "predict $tag" "$PY" -m legalir2 predict --evaluate \
+          --dense "$IDX_TUNED" --embedding-model "$EMB_TUNED" \
+          --reranker-model "$reranker" \
+          --settings "$(BLEND_TUNED "$STACKER_TUNED")" --output "outputs/$tag.json"
+    fi
+    "$PY" -m legalir2 compare --before outputs/v4-stacked.diagnostics.json \
+        --after "outputs/$tag.diagnostics.json" --label "$tag vs 0.9493" || true
+    backup
+  done
+
+  gate "if either interval CLEARS ZERO you have the first real gain since 0.9493, and it
+     cost forty minutes of a rented GPU and no training at all. If both span zero but
+     the means are close to it, run 'refit' - the stacker may simply be calibrated to
+     the wrong pipeline. If both are clearly negative, the reranker genuinely cannot
+     exploit a better candidate pool and that is a finding worth writing down."
+}
+
+stage_refit() {
+  stage_now "refit"
+  say "refit the stacker ON the tuned pipeline, out of fold (~45 min)"
+  step "v4-stacker-tuned.json may have been fitted against the base dense channel."
+  step "a stacker reads per-question normalised retrieval features, so a different"
+  step "dense channel changes every one of them."
+  local reranker="${MODEL:-models2/reranker-tuned-idx}"
+  [ -f "$reranker/config.json" ] || reranker=models2/reranker-g32
+  timed "stack" "$PY" -m legalir2 stack --limit 2000 \
+      --dense "$IDX_TUNED" --embedding-model "$EMB_TUNED" \
+      --reranker-model "$reranker" --settings "$(BLEND_TUNED)" \
+      --cache artifacts2/groups/stack-l3.jsonl --output outputs/l3-stacker.json
+
+  timed "predict validation" "$PY" -m legalir2 predict --evaluate \
+      --dense "$IDX_TUNED" --embedding-model "$EMB_TUNED" \
+      --reranker-model "$reranker" \
+      --settings "$(BLEND_TUNED outputs/l3-stacker.json)" \
+      --output outputs/l3-refit.json
+  "$PY" -m legalir2 compare --before outputs/v4-stacked.diagnostics.json \
+      --after outputs/l3-refit.diagnostics.json --label "tuned pipeline, refit stacker"
+  backup
+}
+
 stage_baseline() {
   stage_now "baseline"
-  say "candidate recall as the system stands (~20 min)"
+  say "candidate recall as the system stands (~5 min)"
   step "this is the number legalir3 is trying to move. Final Recall@5 is downstream of"
   step "it and 58% as sensitive, which is why it is not the metric here."
   if done_already outputs/l3-baseline.json; then step "already measured"; else
@@ -110,7 +222,7 @@ STATS
 stage_train() {
   stage_now "train"
   [ -f "$BI_GROUPS" ] || { step "$BI_GROUPS missing - run mine first"; return 1; }
-  say "fine-tune the bi-encoder on dense-channel negatives (~2 h)"
+  say "fine-tune the bi-encoder on dense-channel negatives (~50 min)"
   step "InfoNCE, one positive against this question's hard negatives plus the batch."
   if done_already "$TUNED/config.json"; then step "already trained; FORCE=1 to redo"; else
     timed "train-bi" "$PY" -m legalir2 train-bi \
@@ -137,15 +249,13 @@ stage_measure() {
   stage_now "measure"
   [ -f "$INDEX/manifest.json" ] || { step "index first"; return 1; }
   [ -f outputs/l3-baseline.json ] || { step "run baseline first"; return 1; }
-  say "candidate recall with the tuned encoder, paired against the baseline (~25 min)"
+  say "candidate recall with the tuned encoder, paired against the baseline (~5 min)"
+  step "one evaluation pass; all three channels are compared from it. The dense channel"
+  step "says whether the encoder improved, the fused channel says whether that survived"
+  step "fusion - which is what the reranker actually receives."
   timed "retrieval" "$PY" -m legalir2 retrieval "${DENSE_NEW[@]}" \
       --settings "$(BLEND)" --output outputs/l3-tuned.json \
-      --label "dense-channel negatives" --against outputs/l3-baseline.json --channel dense
-
-  say "and what it did to the fusion, which is what the reranker actually receives"
-  "$PY" -m legalir2 retrieval "${DENSE_NEW[@]}" --settings "$(BLEND)" \
-      --output outputs/l3-tuned.json --label "fusion" \
-      --against outputs/l3-baseline.json --channel fused
+      --label "dense-channel negatives" --against outputs/l3-baseline.json
   backup
   gate "two intervals matter and they mean different things. @50 is the CEILING the
      reranker can reach - a gain there is headroom bought. @5 is the ORDER it starts
@@ -178,6 +288,8 @@ print(json.dumps(s))" "$(BLEND)")"
 }
 
 case "$STAGE" in
+  quick)    stage_quick ;;
+  refit)    stage_refit ;;
   baseline) stage_baseline ;;
   mine)     stage_mine ;;
   train)    stage_train ;;

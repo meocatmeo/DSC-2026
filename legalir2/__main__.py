@@ -560,8 +560,12 @@ def dispatch(args):
                                                 for d, v in row.items()))
         write_json(Path(args.output).with_suffix(".summary.json"), summary)
         if args.against:
-            retrieval_compare(args.against, args.output, channel=args.channel,
-                              label=args.label)
+            # Every channel, from the one evaluation pass. Comparing them one at a time
+            # would mean re-running the whole retrieval to look at a different column of
+            # the same result - the ranks are already in the report.
+            for name in ("lexical", "dense", "fused"):
+                retrieval_compare(args.against, args.output, channel=name,
+                                  label=args.label)
         return 0
 
     if args.command == "compare":

@@ -1,313 +1,236 @@
-# UIT DSC 2026 — Task 1 (LegalIR): what was done, what worked, and what the numbers say
+# UIT DSC 2026 — Task 1 (LegalIR): the whole project, and where the ceiling is
 
-**Active configuration note:** the Qwen 2B phase described later is historical and
-unshipped. The active improvement path stays on the 0.6B AITeamVN reranker that
-produced the 0.9493 submission; use `gpu-phase4.sh multipos` with `--document-loss`.
+Public test: **0.9493**. Ten measured interventions followed it. One was statistically
+real and turned out to be redundant; nine were not distinguishable from no change.
 
-Public test: **0.9493**. This document explains how it got there, what was tried after and
-failed, and — the part worth reading — why the failures are informative rather than just
-disappointing.
+This document records what was built, what was measured, and — the part worth reading —
+the mechanism behind the ceiling, which the last experiment finally exposed.
+
+*Supersedes the earlier draft of this file, which described the wrong architecture in
+section 1 and drew the wrong conclusion in section 7. Both are corrected below.*
 
 ---
 
-## 1. The system
+## 1. The system, as actually shipped
 
-A three-stage retrieval pipeline over a Vietnamese legal corpus, answering each question
-with five document ids, scored by Recall@5.
+Verified from `submission-v4.run.json`, not from memory:
 
 ```
 question
    |
-   +-- lexical channel   BM25F + bigram postings over a chunk store
-   +-- dense channel     Qwen3-Embedding-0.6B, fine-tuned, FAISS-free resident matrix
+   +-- lexical channel   BM25F + hashed bigram postings, article-level chunks
+   +-- dense channel     AITeamVN/Vietnamese_Embedding_v2, PUBLISHED weights
    |
    v
-weighted RRF fusion  ->  top-100 candidates
+weighted RRF fusion  ->  top-50 candidates
    |
    v
-cross-encoder rerank  ->  Qwen3-Reranker-0.6B, fine-tuned (causal yes/no scoring)
+cross-encoder rerank  ->  AITeamVN/Vietnamese_Reranker fine-tuned (reranker-g32),
+                          sequence-classification head, 3 passages per document
    |
    v
-learned rank fusion (stacker)  ->  final top-5
+learned rank fusion (stacker, 12 features)  ->  final top-5
 ```
 
-Deployed parameter budget: 0.57B embedder + 0.6B reranker = **1.2B of a 4B allowance**.
-Every checkpoint comes from the organisers' approved model sheet. No external API is
-called at any point; `download` is the only command that touches the network, and it
-records a SHA-256 for every file it writes.
+Deployed parameters: 567,754,752 embedder + 567,755,777 reranker = **1.14B of a 4B
+allowance**. Rerank depth is **50**, not 100. Every checkpoint is from the organisers'
+approved sheet; `download` is the only command that touches the network and it records
+a SHA-256 for every file it writes.
+
+Recomputing the saved validation predictions gives **0.945397**, matching the stored
+metric exactly.
 
 ---
 
 ## 2. Score history
 
-| version | change | public |
-|---|---|---|
-| v1 | lexical only | 0.8483 |
-| v2 | + dense channel, + fine-tuned 0.6B reranker | 0.9223 |
-| v3 | **hard negatives mined through the real candidate generator** | 0.9433 |
-| v4 | **+ learned rank fusion over 12 per-question features** | **0.9493** |
-| v5 | cross-fitted re-fit of the stacker | −0.0014, not shipped |
-| v6 | 1.88B reranker in place of the 0.6B | −0.0038, not shipped |
+| version | change | validation | public |
+|---|---|---|---|
+| v1 | lexical only | 0.8483 | — |
+| v2 | + dense channel, + fine-tuned reranker | — | 0.9223 |
+| v3 | **hard negatives mined through the real candidate generator** | 0.9371 | 0.9433 |
+| v4 | **+ learned rank fusion over 12 features** | 0.9454 | **0.9493** |
+| v5–v8 | ten further interventions | 0.9276–0.9457 | not shipped |
 
-Two changes produced everything. Both are described below, because *why* they worked is
-more transferable than the fact that they did.
+Two changes produced everything.
 
 ---
 
-## 3. The change that mattered most: mining through the real candidate generator
+## 3. What worked, and why
 
-Hard-negative mining originally used a private `_blend()` inside `mine.py` — min-max
-normalisation, equal channel weights. Inference used weighted RRF in `pipeline.py`. Two
-different functions, both reasonable, producing two different candidate orderings.
+### 3.1 Mining through the real candidate generator — **+0.0210**
 
-The consequence is subtle and expensive. The reranker was trained to separate gold from
-negatives drawn from distribution A, and then deployed against negatives drawn from
-distribution B. It had never seen the documents it would actually be asked to rank.
+`mine.py` had a private `_blend()`: min-max normalisation, equal channel weights.
+Inference used weighted RRF. Two reasonable implementations of the same idea, in two
+files, producing two different candidate orderings.
+
+The reranker was therefore trained to reject negatives from distribution A and deployed
+against distribution B. Nothing errors; the model just quietly converts fewer of the
+candidates it is handed.
 
 The fix was to delete the second implementation and mine through `Pipeline.candidates()`
-with the reranker unloaded, so training negatives are by construction the same documents
-inference will produce.
+with the reranker unloaded. A regression test now asserts mined negatives are a subset of
+the prediction ranking under deliberately lopsided channel weights — a configuration
+where the two implementations would have disagreed loudly.
 
-**+0.0210 on the public test.** Larger than every subsequent intervention combined.
+Larger than every subsequent intervention combined.
 
-A regression test now asserts that mined negatives are a subset of the prediction
-ranking under deliberately lopsided channel weights — a configuration where the two
-implementations would have disagreed loudly.
+### 3.2 Learned rank fusion — **+0.0060**
 
----
-
-## 4. The second change: learned rank fusion
-
-Recall@5 is decided by five slots, but the pipeline was choosing them from a single
-fused score. A document ranked first by BM25F and fortieth by the dense channel is a
-different object from one ranked twentieth by both, and fusion had already destroyed
-that distinction before anything could use it.
+Five slots were being chosen from a single fused score. A document ranked first by BM25F
+and fortieth by the dense channel is a different object from one ranked twentieth by
+both, and fusion destroys that distinction before anything can use it.
 
 `stack.py` fits a linear listwise model over 12 per-question min-max-normalised
-features — reranker score max/second/mean/spread/near-top, fused score and reciprocal
-rank, lexical score and rank, dense score and rank, and the lexical-dense gap — with a
-softmax cross-entropy objective whose target mass splits across multiple gold documents.
-
-**+0.0060 on the public test.** The only one of four phase-four interventions to survive
-a paired test.
+features — reranker max/second/mean/spread/near-top, fused score and rank, lexical score
+and rank, dense score and rank, lexical-dense gap — with multi-positive targets.
 
 ---
 
-## 5. How results are judged, and why that changed mid-project
+## 4. How results are judged
 
-Partway through, a set of confident conclusions turned out to be noise. Three "regressions
-caused by improving retrieval" were differences of 0.1 to 1.4 standard errors on a
-1,050-question holdout, where 1 s.e. is 0.0075. They were nothing, read as something.
+Partway through, a set of confident conclusions turned out to be noise: three
+"regressions caused by improving retrieval" were differences of 0.1 to 1.4 standard
+errors on a 1,050-question holdout where 1 s.e. is 0.0075.
 
-Everything since is judged by `compare.py`: a **paired** comparison over per-question
-scores, reporting the mean difference, a 95% bootstrap interval, an exact sign test, and
-the count of questions that actually changed.
+Everything since is judged by `compare.py`: paired per-question scores, a 95% bootstrap
+interval, an exact sign test, and the count of questions that actually changed.
 
-Three consequences worth stating plainly:
+Four rules earned the hard way:
 
-**The detection floor is 0.0094 at n=1050.** Any change smaller than that is
-unmeasurable on the holdout, whether or not it is real.
+**A sweep is a selection procedure, not a measurement.** Best-of-130 configurations on
+400 questions reported +0.0107; none survived held-out data. `cache.search()` now
+requires a paired interval excluding zero before adopting anything.
 
-**Coordinate-ascent sweeps are a selection procedure, not a measurement.** A phase-four
-sweep took the argmax of ~130 configurations on 400 questions and reported +0.0107. None
-of it survived held-out data. `cache.search()` now requires a candidate to beat the
-incumbent on a paired interval that excludes zero before it is adopted — conservative by
-construction, and it will leave small real gains on the table rather than hand back
-gains that are not there.
+**Scoring a model on its own training data measures memorisation.** The frozen-score
+cache is built from cross-fitted models — questions split in two, a reranker trained on
+each half, every question scored by the model that never saw it.
 
-**Scoring with a model on its own training data measures memorisation.** The deployed
-reranker saw 5,950 of the ~7,000 labelled questions. The frozen-score cache is therefore
-built from *cross-fitted* models — the questions split in two, a reranker trained on each
-half, every question scored by the model that never saw it. Without that, a larger
-evaluation set is just a more confident way to be wrong.
+**Folds must key on normalised question TEXT.** The labelled set contains 16 duplicate
+question groups; 10 straddled the fold boundary while folds were keyed on id, leaking
+training questions into the held-out half of the cross-fit.
 
-The cache itself makes the expensive part reusable: the reranker's forward pass does not
-depend on any ranking-level setting, so scores are computed once and every question about
-aggregation, depth, blend weights or the stacker becomes arithmetic. Resolution across
-all ~7,000 questions is 0.0036.
+**The detection floor is not a constant.** It depends on the distribution of paired
+differences, not only on *n*. In practice, for changes that produce wins and losses in
+roughly equal numbers — which every intervention here did — it sits near 0.0094 on 1,050
+questions.
 
 ---
 
-## 6. Phase six: the 1.88B reranker
+## 5. The ten interventions
 
-**The hypothesis.** Cross-encoder quality scales with parameter count, and the deployment
-used 1.2B of a 4B allowance. This was the one remaining change that adds capacity rather
-than re-weighting what is already there — better prior evidence than anything else left
-on the list.
+| # | intervention | result |
+|---|---|---|
+| 1 | multi-positive listwise loss | 0.9330 vs 0.9371 |
+| 2 | rerank setting sweep | nothing survived held-out data |
+| 3 | cross-fitted stacker refit | −0.0014 [−0.0063, +0.0033] |
+| 4 | 1.88B reranker (Prism-Qwen3.5) in place of the 0.6B | −0.0038 [−0.0132, +0.0054] |
+| 5 | document-level Recall@5 loss, g32 init | −0.0032 [−0.0130, +0.0063] |
+| 6 | document-level Recall@5 loss, base init, scale-invariant | −0.0031 |
+| 7 | ViRanker ensemble | +0.0030 [−0.0067, +0.0130] |
+| 8 | **Qwen3-Reranker-0.6B ensemble** | **+0.0086 [+0.0011, +0.0163]** |
+| 9 | tuned embedder + tuned reranker + stacker | −0.0006 [−0.0090, +0.0078] |
+| 10 | retrain on all 7,000 labels | unmeasurable by construction |
 
-**The model.** `infgrad/Prism-Qwen3.5-Reranker-2B` (approved sheet), 1.88B parameters,
-24 layers, hidden 2048. Deployed budget would have been 2.45B of 4B.
+Number 8 was real — and then measured `+0.0003, 10 better, 10 worse` against the
+stacker. Two unrelated mechanisms, a second model family and a learned rank fusion,
+converged on the same 0.008 and the same ~20 questions.
 
-### What it took to run at all
+Notes on two of the failures, because the *reason* matters more than the result:
 
-*Architecture.* `model_type: qwen3_5_text` is unknown to transformers 4.51.3 — a hard
-`KeyError`. Qwen3.5 needs 5.2+; current release is 5.17.0. That is a major-version jump
-for every tokeniser and model in the project.
+**#4 and #8 were partly confounded.** `final_order` short-circuits into the stacker
+whenever one is active, and `build_features` reads `passage_scores[0]` only — so a
+second reranker is scored, paid for, and then ignored. Both experiments measured a new
+model filtered through a fusion fitted on the old one's score distribution.
 
-Rather than upgrade in place, `gpu-venv5.sh` builds a **second interpreter**. The risk of
-upgrading was never that it would crash — a crash announces itself. The risk was that
-everything would load and something small would shift, so that phase six compared a new
-model under a new library against a baseline measured under the old one and reported the
-sum of two changes as one. The second venv also re-measures the shipped 0.6B pipeline
-under transformers 5, giving a baseline where the library variable cancels.
+**#5 had no gradient.** `softplus(s_negative − s_gold)` is scale dependent, and a
+competent reranker separates gold from mined negatives by 10–16 raw logits.
+softplus(−16) is 1.1e-7. The loss was standardised per question in #6 and the answer did
+not change, which is what closes the hypothesis rather than the implementation.
 
-*Prompt template.* Prism's system prompt and instruction differ from Qwen3-Reranker's.
-Using the wrong one raises nothing at all — it just makes every score quietly worse, and
-the symptom four hours later is "the 2B didn't help." `models.py` now carries a
-per-checkpoint template resolved through provenance, and the preflight asserts that a
-known-relevant passage outscores a known-irrelevant one before any training begins.
-It passed at +0.7549 against +0.1480.
+---
 
-*Kernels.* Qwen3.5 is a hybrid linear-attention architecture. Both fast paths
-(`chunk_gated_delta_rule`, `causal_conv1d_fn`) were missing, so it ran the reference
-implementation at 52 passages/s.
-
-Installing `flash-linear-attention` appeared to make it **seven times slower** — 7 p/s.
-That was the benchmark, not the kernel: FLA JIT-compiles Triton kernels per tensor shape
-on first call, and the probe timed one un-warmed batch. A rewritten benchmark that warms
-up at each shape and reports four repetitions showed steady state at **68–77 p/s**.
-
-`causal-conv1d` was abandoned mid-build. Its `setup.py` hardcodes a `-gencode` list
-rather than reading `TORCH_CUDA_ARCH_LIST`, so it was compiling `sm_100` kernels for an
-`sm_89` card — thousands of template instantiations, six architectures of which were
-useless, for a few percent on the smaller of the two kernels.
-
-*Memory.* Gradient checkpointing off OOMed at 47.37 GiB on a 48 GB card. The estimate
-that said 22–28 GB failed to account for per-chunk recurrent state in the hybrid layers,
-the 150k-vocab embedding, and autocast's bf16 weight copies.
-
-### Training
-
-LoRA r=16 on all attention and MLP projections, merged on save so the deployed artefact
-is an ordinary checkpoint with no peft dependency. Group size 16, accumulate 8 (128 pairs
-per optimiser step), 2 epochs, max length 768, on the **already-mined** groups — the
-candidate distribution had not changed, so those negatives were still the ones a 2B model
-would face at inference, and re-mining would only have risked the section-3 property.
-
-1.93 s per forward, 11,900 forwards, **6.4 hours**. Roughly 96 TFLOPS sustained — close
-to what the card can deliver, so compute-bound rather than misconfigured.
-
-One note on how *not* to shorten it: the cosine schedule is sized from the epoch count,
-so `--epochs 1` is a complete run that warms up and anneals to zero. Killing a two-epoch
-run halfway is not the same thing — it leaves the learning rate near its peak and saves a
-mid-training snapshot. (That exact bug, sizing the schedule in micro-steps rather than
-optimiser steps, cost a training run earlier in the project. Nothing in the loss curve
-shows it.)
-
-### Result
+## 6. Where the loss sits
 
 ```
-2B reranker vs the 0.6B, same library, paired, n=1050
-
-  before            0.9454
-  after             0.9416
-  difference       -0.0038   95% CI [-0.0132, +0.0054]
-  disagreements    17 better, 22 worse, 1011 identical
-  sign test         p = 0.522
-
-  VERDICT: not distinguishable from no change
+candidate recall @5 (fusion order)   0.8914     what reranking starts from
+candidate recall @50                 0.9805     what reranking can reach
+candidate recall @100                0.9845
+final Recall@5                       0.9454
 ```
 
-Not shipped.
+Total loss **0.0546**: 0.0195 never enters the top-50 pool, 0.0351 enters and is not
+placed top-5. Concentrated by question type:
 
-### The number that matters more than the verdict
+| | questions | Recall@5 | share of loss | recoverable by reordering the actual 50 |
+|---|---|---|---|---|
+| single-gold | 957 | 0.9613 | 65% | 0.0257 |
+| multi-gold | 93 | 0.7814 | 35% | 0.0094 |
 
-**1,011 of 1,050 rankings were identical.** Tripling reranker capacity moved 3.7% of the
-output. That is not a model that failed to help; it is a model that barely got a vote.
-
-There is a specific reason, and it is a design error in the harness. `final_order`
-short-circuits into the stacker whenever one is active, and `v4-stacker.json` was fit on
-features drawn from the **0.6B's** score distribution — `rr_max`, `rr_second`,
-`rr_spread`, `rr_near_top`. Substituting a model whose scores live on a different scale
-does not retrain those weights; it feeds new numbers into a fusion that learned what the
-old ones meant.
-
-So this measured "a 2B reranker filtered through a stacker that does not know it," not
-"a 2B reranker." The experiment is confounded.
-
-Refitting properly needs 2B features over the training questions — 5,950 × 100 documents
-× 3 passages at ~50 p/s is about ten hours before anything is measured. On a path where
-five consecutive interventions have landed inside the noise, that was judged a bad bet.
+Multi-gold questions are 8.9% of the set and over a third of the loss, but most of their
+loss is gold that never reached the pool — so the larger *recoverable* mass is in
+single-gold questions.
 
 ---
 
-## 7. Where the remaining loss actually is
+## 7. The ceiling, and what causes it
 
-From `outputs/v6-2b.metrics.json`:
+The earlier draft of this section proposed that retrieval was the untouched half and
+would pay twice. That was wrong, and experiment #9 is why.
+
+A tuned bi-encoder and a matching dense index were built in phase two. Three runs used
+them:
 
 ```
-candidate pool @5      0.8914     fusion order, before reranking
-candidate pool @20     0.9679
-candidate pool @100    0.9845     ceiling any reranker can reach at this depth
-candidate pool @200    0.9881
-final Recall@5         0.9454
+                          cand@5    @50    final   conversion
+base + stacker            0.8914  0.9805  0.9454     61%
+tuned + stacker           0.9171  0.9833  0.9448     42%
+tuned, no stacker         0.9171  0.9833  0.9333     25%
+tuned, no stacker (v2)    0.9171  0.9833  0.9276     16%
 ```
 
-Reranking converts 0.0540 of the 0.0931 available — **58% of the headroom**. What remains
-is **0.0391** of gold that reaches the candidate pool and still does not land in the top
-five.
+The tuned embedder is a **large** retrieval win: +0.0257 of candidate recall@5, three
+times anything the reranker work produced, plus a higher ceiling at every depth.
 
-Retrieval is not the ceiling. Only 1.55% of gold never enters the pool at all, and
-doubling depth to 200 would add 0.0036 to the ceiling. The leak is in ranking.
+And the finished system does not move. 0.9448 against 0.9454, with **1,019 of 1,050
+predictions identical**.
 
-And it is concentrated:
+**Retrieval and reranking are substitutes here, not complements.** The gold a better
+dense channel lifts into the top five is gold the reranker was already recovering from
+deeper in the pool. Improving retrieval hands the reranker work it was already doing,
+and the conversion rate falls by almost exactly what retrieval gained.
 
-| | questions | Recall@5 | share of total loss |
-|---|---|---|---|
-| single-gold | 957 | 0.9613 | 65% |
-| multi-gold | 93 | 0.7814 | **35%** |
+That explains the whole sequence. Ten interventions and two retrieval configurations all
+land at 0.945 ± 0.006 because the binding constraint is neither stage. It is the ~0.035
+of gold that reaches the pool and cannot be placed in the top five by *any* ordering of
+the same evidence.
 
-Multi-gold questions are 8.9% of the set and over a third of everything being lost. The
-mechanism is structural: Recall@5 on a 2-gold question requires *both* documents in five
-slots, so placing one of them scores 0.5 regardless of the reranker's confidence. Nothing
-tried so far addresses this — top-5 selection treats a 2-gold question exactly like a
-1-gold one.
+The error inventory says what that gold is:
+
+- query `123452`: the amendment `226545` was candidate 5 and dropped; the base decree
+  `258342` was kept
+- query `132594`: gold `303485` was candidate 8; the output was five related
+  tax-extension documents
+- query `9060`: the sole gold was candidate 14 and never appears as a positive anywhere
+  in the 5,950 training questions
+
+No reranker separates a decree from the decree amending it on text alone. That is what
+"amendment" means. The residual is not a ranking failure — it is a *distinguishability*
+failure, and it is the subject of `PLAN-legalir4.md`.
 
 ---
 
-## 8. Why five interventions in a row measured as nothing
-
-Not a failure of ideas. It is the regime.
-
-Detection floor on the holdout is 0.0094. Clearing it takes a single change that converts
-**26% of all remaining ranking headroom at once**. Every plausible remaining fix —
-multi-gold-aware selection, a refit stacker, deeper reranking — is individually worth
-somewhere in the 0.003–0.008 band. They are real and they are invisible to the ruler that
-can be afforded.
-
-The cross-fitted 7,000-question harness resolves 0.0036 and exists and works. It costs
-GPU hours per evaluation, and when it was run it found nothing either — including
-measuring the cross-fitted stacker at −0.0014 [−0.0063, +0.0033] against the shipped one,
-which is itself reassuring evidence that 0.9493 is not overfit.
-
----
-
-## 9. If this is picked up again
-
-The only target with enough mass behind it to be measurable is **multi-gold selection**:
-20.3 of 57.4 lost points inside 93 questions, and the actual mechanism is untouched.
-
-Everything else is below the floor individually. Stacking several such changes and
-measuring the bundle would work, but a bundle that measures positive does not say which
-part earned it — and on this project, that has mattered.
-
-### Reproducing the environment
+## 8. Reproducing
 
 Two interpreters, deliberately:
 
 | | transformers | used for |
 |---|---|---|
-| `.venv` | 4.51.3 | the shipped 0.9493 pipeline |
-| `.venv5` | 5.17.0 + `flash-linear-attention` | anything Qwen3.5 |
+| `.venv` | 4.51.3 | the shipped pipeline |
+| `.venv5` | 5.17.0 + flash-linear-attention | Qwen3.5 checkpoints only |
 
-Exact package sets are in `outputs/venv-freeze.txt` and `outputs/venv5-freeze.txt`.
+Exact package sets in `outputs/venv-freeze.txt` and `outputs/venv5-freeze.txt`.
+`gpu-restore.sh` rebuilds a box from Drive; its lexical-only baseline must read
+**0.8483**, which is the corpus integrity check.
 
-`gpu-restore.sh` rebuilds a box from Drive and prints what survived. Its lexical-only
-baseline must read **0.8483** — that is the corpus integrity check, and a different
-number means every later measurement is against a different dataset.
-
-### Hardware
-
-1x RTX 6000 Ada, 48 GB, ~764 GB/s measured, $0.881/h. Phase six end to end was about
-ten hours and roughly $9. Rent by **max duration** before price: the full sequence does
-not fit inside a three-hour ceiling.
+Hardware: the full sequence runs on a 24 GB card. Rent by max duration before price.

@@ -47,6 +47,29 @@ FEATURES = (
     "lex_den_gap",      # channels disagreeing is itself informative
 )
 
+# Per-reranker block, repeated for the second and later models. The first reranker keeps
+# the bare names above so a 12-weight file fitted before this change still loads and
+# still means the same thing.
+PER_RERANKER = ("rr_max", "rr_second", "rr_mean", "rr_spread", "rr_near_top")
+# Two models agreeing is different evidence from one model being confident, and neither
+# per-model block can express it: agreement is a relation, not a property.
+AGREEMENT = ("rr_agree_rank", "rr_gap", "rr_min_norm")
+
+
+def feature_names(rerankers=1):
+    """Feature names for a given number of rerankers.
+
+    With one reranker this returns FEATURES unchanged, so every stacker fitted before
+    multi-reranker support keeps working and keeps meaning what it meant.
+    """
+    if rerankers <= 1:
+        return FEATURES
+    names = list(FEATURES)
+    for index in range(1, rerankers):
+        names.extend(f"{name}_{index + 1}" for name in PER_RERANKER)
+    names.extend(AGREEMENT)
+    return tuple(names)
+
 
 def _ranks(ranking):
     """{doc: (score, rank)} from a [(doc, score), ...] ranking."""
@@ -60,34 +83,78 @@ def _normalise(column):
     return (column - low) / span if span > 1e-12 else np.zeros_like(column)
 
 
-def build_features(docs, passage_scores, channels):
-    """Feature matrix for one question, per-question normalised. Shape (len(docs), 12).
-
-    Missing channels are handled as "ranked worse than anything present" rather than as
-    zero, because absence from a channel is evidence, not a neutral value.
-    """
-    table = passage_scores[0] if passage_scores else {}
-    lex, den = _ranks(channels.get("lexical") or []), _ranks(channels.get("dense") or [])
-    fused = _ranks(channels.get("fused") or [])
-    absent = len(docs) + 1
-    rows = []
-    for doc in docs:
-        values = sorted(table.get(doc, []), reverse=True) or [0.0]
-        best, mean = values[0], sum(values) / len(values)
-        lex_score, lex_rank = lex.get(doc, (0.0, absent))
-        den_score, den_rank = den.get(doc, (0.0, absent))
-        fus_score, fus_rank = fused.get(doc, (0.0, absent))
-        rows.append([
-            best,
+def _passage_block(table, doc):
+    """The five per-reranker features for one document: (max, second, mean, spread, near)."""
+    values = sorted(table.get(doc, []), reverse=True) or [0.0]
+    best, mean = values[0], sum(values) / len(values)
+    return (best,
             values[1] if len(values) > 1 else best,
             mean,
             best - mean,
-            float(sum(1 for v in values if v >= best - 1.0)),
+            float(sum(1 for v in values if v >= best - 1.0)))
+
+
+def build_features(docs, passage_scores, channels):
+    """Feature matrix for one question, per-question normalised.
+
+    Shape is (len(docs), 12) with one reranker and (len(docs), 12 + 5*(n-1) + 3) with n.
+
+    Missing channels are handled as "ranked worse than anything present" rather than as
+    zero, because absence from a channel is evidence, not a neutral value.
+
+    **Every reranker is read, not just the first.** Until this change the function took a
+    list of score tables and used `passage_scores[0]`, so a second model was scored, paid
+    for, and then discarded the moment a stacker was active. Two experiments were spent
+    on that: a 1.88B reranker measured through a fusion fitted on the 0.6B's scores, and
+    an ensemble whose significant +0.0086 vanished to +0.0003 with 1,030 of 1,050
+    predictions identical - the signature of the second model having no effect at all.
+    """
+    tables = [t for t in (passage_scores or []) if t is not None] or [{}]
+    table = tables[0]
+    lex, den = _ranks(channels.get("lexical") or []), _ranks(channels.get("dense") or [])
+    fused = _ranks(channels.get("fused") or [])
+    absent = len(docs) + 1
+
+    # Each reranker's own document ranking, so "the models disagree about where this
+    # document belongs" can be a feature. Raw scores are not comparable between models;
+    # ranks are.
+    orders = []
+    for one in tables:
+        ranked = sorted(docs, key=lambda d: (-_passage_block(one, d)[0], d))
+        orders.append({d: position + 1 for position, d in enumerate(ranked)})
+
+    rows = []
+    for doc in docs:
+        best, second, mean, spread, near = _passage_block(table, doc)
+        lex_score, lex_rank = lex.get(doc, (0.0, absent))
+        den_score, den_rank = den.get(doc, (0.0, absent))
+        fus_score, fus_rank = fused.get(doc, (0.0, absent))
+        row = [
+            best, second, mean, spread, near,
             fus_score, 1.0 / (1.0 + fus_rank),
             lex_score, 1.0 / (1.0 + lex_rank),
             den_score, 1.0 / (1.0 + den_rank),
             abs(1.0 / (1.0 + lex_rank) - 1.0 / (1.0 + den_rank)),
-        ])
+        ]
+        if len(tables) > 1:
+            for one in tables[1:]:
+                row.extend(_passage_block(one, doc))
+            ranks = [order[doc] for order in orders]
+            # Each model's score is min-max normalised within its own ranking before
+            # they are compared; the raw scales differ by orders of magnitude between a
+            # sequence-classification logit and a yes/no logit difference.
+            spans = []
+            for one in tables:
+                column = [_passage_block(one, d)[0] for d in docs]
+                low, high = min(column), max(column)
+                value = _passage_block(one, doc)[0]
+                spans.append((value - low) / (high - low) if high - low > 1e-12 else 0.0)
+            row.extend([
+                1.0 / (1.0 + float(sum(ranks)) / len(ranks)),   # mean rank across models
+                float(max(spans) - min(spans)),                  # how far they disagree
+                float(min(spans)),                               # the least confident model
+            ])
+        rows.append(row)
     matrix = np.asarray(rows, dtype="float64")
     for column in range(matrix.shape[1]):
         matrix[:, column] = _normalise(matrix[:, column])
@@ -112,7 +179,18 @@ class Stacker:
         return matrix @ self.weights
 
     def order(self, docs, passage_scores, channels):
-        scores = self.score(build_features(docs, passage_scores, channels))
+        matrix = build_features(docs, passage_scores, channels)
+        if matrix.shape[1] != len(self.names):
+            # A 12-weight stacker paired with a two-reranker pipeline used to produce a
+            # ranking that silently ignored the second model. Refusing is the point: the
+            # weights and the pipeline have to describe the same system.
+            raise ValueError(
+                f"stacker has {len(self.names)} weights but this pipeline produces "
+                f"{matrix.shape[1]} features. A stacker fitted for "
+                f"{1 if len(self.names) == len(FEATURES) else 'n'} reranker(s) cannot "
+                f"score a pipeline with a different number - refit it with "
+                f"`legalir2 stack --reranker-model <all of them>`.")
+        scores = self.score(matrix)
         return [doc for _, doc in sorted(zip(-scores, docs), key=lambda x: (x[0], x[1]))]
 
 
@@ -183,9 +261,14 @@ def collect(args, limit=2000, output=None, depth=None):
         if labels.sum() == 0:
             continue            # no gold in the pool: nothing for a re-ranking to learn
         covered += 1
-        table = pipeline._rerank(pipeline.rerankers[0], record["question"], docs, prior, {})
+        # Every reranker, not just the first. A stacker fitted on one model's features
+        # and then deployed over two is the confound that made both ensemble experiments
+        # unreadable, and it costs a GPU pass to discover.
+        cache = {}
+        tables = [pipeline._rerank(model, record["question"], docs, prior, cache)
+                  for model in pipeline.rerankers]
         cached.append({"id": qid,
-                       "features": build_features(docs, [table], channels).tolist(),
+                       "features": build_features(docs, tables, channels).tolist(),
                        "labels": labels.tolist()})
         if number % 100 == 0:
             rate = number / max(1e-6, time.time() - started)
@@ -205,14 +288,30 @@ def train(cache_path, output, **kwargs):
     for line in Path(cache_path).open(encoding="utf-8"):
         record = json.loads(line)
         rows.append((np.asarray(record["features"]), np.asarray(record["labels"])))
+    width = rows[0][0].shape[1]
+    # Recover how many rerankers produced this cache from the width, so the printed
+    # weights are labelled correctly and the written file records the right names.
+    rerankers = 1 if width == len(FEATURES) else \
+        1 + (width - len(FEATURES) - len(AGREEMENT)) // len(PER_RERANKER)
+    names = feature_names(rerankers)
+    if len(names) != width:
+        raise ValueError(f"cache has {width} features, which matches no reranker count")
     print(f"  fitting on {len(rows)} questions, "
-          f"{sum(len(m) for m, _ in rows)} candidate rows, {len(FEATURES)} features")
+          f"{sum(len(m) for m, _ in rows)} candidate rows, {width} features "
+          f"from {rerankers} reranker(s)")
     weights, history = fit(rows, **kwargs)
     order = np.argsort(-np.abs(weights))
     print("\n  learned weights, largest first:")
     for index in order:
-        print(f"    {FEATURES[index]:<14} {weights[index]:+.4f}")
-    write_json(output, {"features": list(FEATURES), "weights": weights.tolist(),
+        print(f"    {names[index]:<16} {weights[index]:+.4f}")
+    if rerankers > 1:
+        share = sum(abs(weights[names.index(n)]) for n in names
+                    if n.endswith("_2") or n in AGREEMENT)
+        print(f"\n  weight mass on the second reranker and agreement features: "
+              f"{100 * share / float(np.abs(weights).sum()):.1f}%")
+        print("  near zero would mean the second model adds nothing the first does not")
+    write_json(output, {"features": list(names), "weights": weights.tolist(),
+                        "rerankers": rerankers,
                         "questions": len(rows), "loss": history[-1],
                         "history": history[::25]})
     print(f"\n  wrote {output}")
