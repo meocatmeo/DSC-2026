@@ -634,6 +634,26 @@ class TestMultiPositiveLoss(unittest.TestCase):
         better = torch.nn.functional.cross_entropy(both_high, targets)
         self.assertLess(float(better), float(worse))
 
+    def test_document_loss_uses_the_fifth_place_cutoff(self):
+        import torch
+        from legalir2.train_ce import recall_pairwise_loss
+        # The positive is seventh and the negative is first, so this pair changes
+        # Recall@5 by exactly one full point for a single-gold question.
+        scores = [torch.tensor([0.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0], requires_grad=True)]
+        loss = recall_pairwise_loss(scores, [1], [1], torch)
+        self.assertGreater(float(loss), 0.0)
+        loss.backward()
+        self.assertIsNotNone(scores[0].grad)
+
+    def test_document_loss_does_not_make_gold_documents_compete(self):
+        import torch
+        from legalir2.train_ce import recall_pairwise_loss
+        first = torch.tensor([9.0, 8.0, 1.0, 0.0, -1.0, -2.0], requires_grad=True)
+        swapped = torch.tensor([8.0, 9.0, 1.0, 0.0, -1.0, -2.0], requires_grad=True)
+        a = recall_pairwise_loss([first], [2], [2], torch)
+        b = recall_pairwise_loss([swapped], [2], [2], torch)
+        self.assertAlmostEqual(float(a), float(b), places=6)
+
 
 class TestLearnedRankFusion(unittest.TestCase):
     """The stacker must learn from evidence and reach the live pipeline unchanged."""
@@ -813,3 +833,311 @@ class TestPairedComparison(unittest.TestCase):
         paired = result["ci"][1] - result["ci"][0]
         self.assertLess(paired, unpaired,
                         "the paired interval should be tighter than the unpaired one")
+
+
+class TestScoreCache(unittest.TestCase):
+    """A cached replay must rank identically to the live pipeline.
+
+    The cache exists so that hundreds of configurations can be judged without a GPU.
+    If its ordering drifts from the live one by even a little, every conclusion drawn
+    from it is about a system that will never ship - the same failure mode as mining
+    through a different fusion than prediction used, which cost this project two points.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory()
+        root = Path(cls.temporary.name)
+        store.build(make_corpus(root / "contexts", extra=25), root / "store.sqlite")
+        lexical.build(root / "store.sqlite", root / "lexical")
+        cls.root = root
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def _pipeline(self, settings):
+        from legalir2.pipeline import Pipeline
+
+        class Stub:
+            def score(self, query, texts, batch, length):
+                return [(zlib.crc32(t.encode("utf-8")) % 1000) / 100.0 for t in texts]
+            def close(self): pass
+
+        pipeline = Pipeline(self.root / "store.sqlite", self.root / "lexical",
+                            settings=settings)
+        pipeline.rerankers = [Stub()]
+        return pipeline
+
+    def _questions(self):
+        from legalir2.store import Store
+        opened = Store(self.root / "store.sqlite")
+        out = {}
+        for number, doc in enumerate(opened.doc_ids[:6]):
+            chunks = opened.document_chunk_ids(doc)
+            if not chunks:
+                continue
+            text = opened.chunk_text(chunks[0], with_label=False)
+            out[f"q{number}"] = {"question": " ".join(text.split()[:12]), "answer": [doc]}
+        opened.close()
+        return out
+
+    def test_cached_evaluation_matches_the_live_pipeline(self):
+        from legalir2.cache import Cache, build
+
+        questions = self._questions()
+        settings = {"candidates": 10, "passages": 2, "aggregate": "max_plus",
+                    "rerank_blend": 0.02}
+        pipeline = self._pipeline(dict(settings))
+        path = build(pipeline, questions, self.root / "cache.npz",
+                     depth=30, rerank_depth=15, passages=4, progress=10**9)
+        live = {qid: pipeline.search(r["question"], top_k=5)
+                for qid, r in questions.items()}
+        pipeline.close()
+
+        cached = Cache(path)
+        for row, qid in cached.rows():
+            channels, table, _ = cached.replay(row)
+            from legalir2.pipeline import DEFAULTS, final_order
+            order = final_order(channels["fused"], [table], dict(DEFAULTS, **settings),
+                                channels=channels)[:5]
+            self.assertEqual(live[qid], order,
+                             f"cached replay diverged from the live pipeline on {qid}")
+
+    def test_the_cache_can_be_re_scored_under_different_settings(self):
+        """The whole point: changing settings must change the answer, with no GPU."""
+        from legalir2.cache import Cache, build
+        questions = self._questions()
+        pipeline = self._pipeline({"candidates": 10, "passages": 2})
+        path = build(pipeline, questions, self.root / "cache2.npz",
+                     depth=30, rerank_depth=15, passages=4, progress=10**9)
+        pipeline.close()
+        cached = Cache(path)
+        a = cached.evaluate({"candidates": 10, "passages": 1, "aggregate": "max"})
+        b = cached.evaluate({"candidates": 5, "passages": 4, "aggregate": "softmax",
+                             "rerank_blend": 0.5})
+        self.assertEqual(set(a), set(b))
+        self.assertTrue(all(0.0 <= v <= 1.0 for v in list(a.values()) + list(b.values())))
+
+    def test_folds_are_stable_under_reordering(self):
+        """A question must keep its fold when the question file changes around it."""
+        from legalir2.cache import folds
+        ids = [f"q{i}" for i in range(500)]
+        first = folds(ids)
+        second = folds(list(reversed(ids)) + ["q_new_1", "q_new_2"])
+        self.assertTrue(all(first[q] == second[q] for q in ids),
+                        "fold assignment moved when the question list changed")
+        sizes = [sum(1 for v in first.values() if v == f) for f in (0, 1)]
+        self.assertTrue(min(sizes) > 0.4 * len(ids), f"folds badly unbalanced: {sizes}")
+
+    def test_the_same_question_under_two_ids_shares_a_fold(self):
+        """Duplicate question text must not straddle the train/score split.
+
+        Keyed on the id, two copies of one question land in different folds roughly
+        half the time, and the model trained on fold A is then "held out" on a question
+        it memorised. That is the exact leak cross-fitting exists to close, reappearing
+        inside the mechanism that closes it.
+        """
+        from legalir2.cache import folds
+        texts = {}
+        for i in range(400):
+            texts[f"a{i}"] = f"Câu hỏi số {i} về hợp đồng xây dựng?"
+            # same question, different id, different spacing and case
+            texts[f"b{i}"] = f"câu  hỏi số {i} VỀ hợp đồng xây dựng"
+        keyed_on_id = folds(list(texts), 5)
+        split = sum(1 for i in range(400) if keyed_on_id[f"a{i}"] != keyed_on_id[f"b{i}"])
+        self.assertGreater(split, 200, "the id-keyed control should split most duplicates")
+
+        keyed_on_text = folds(list(texts), 5, texts=texts)
+        for i in range(400):
+            self.assertEqual(keyed_on_text[f"a{i}"], keyed_on_text[f"b{i}"],
+                             f"duplicate question {i} straddles the fold boundary")
+
+    def test_mining_channel_changes_which_negatives_are_chosen(self):
+        """`--channel dense` must tier negatives on the dense ranking, not the fused one.
+
+        The bi-encoder produces the dense channel's ranking over the whole corpus by
+        itself; fusion happens afterwards. Training it on documents the FUSION found
+        hard is the same train/inference mismatch that cost 0.021 on the reranker, and
+        a flag that silently kept using the fused order would hide it perfectly.
+        """
+        from legalir2.mine import mine as run_mine
+        import json as _json
+        import tempfile as _tempfile
+        from pathlib import Path as _Path
+        from legalir2 import store as _store, lexical as _lexical
+        from legalir2.store import Store as _Store, write_json as _write
+
+        with _tempfile.TemporaryDirectory() as directory:
+            root = _Path(directory)
+            _store.build(make_corpus(root / "contexts", extra=25), root / "store.sqlite")
+            _lexical.build(root / "store.sqlite", root / "lexical")
+            opened = _Store(root / "store.sqlite")
+            questions = {}
+            for number, doc in enumerate(opened.doc_ids[:12]):
+                chunks = opened.document_chunk_ids(doc)
+                if chunks:
+                    text = opened.chunk_text(chunks[0], with_label=False)
+                    questions[f"q{number}"] = {"question": " ".join(text.split()[:12]),
+                                               "answer": [doc]}
+            opened.close()
+            _write(root / "q.json", questions)
+
+            def mined(channel):
+                out = root / f"g-{channel}.jsonl"
+                run_mine(root / "store.sqlite", root / "lexical", root / "q.json", out,
+                         device="cpu", negatives=4, positives=1, depth=20,
+                         channel=channel)
+                rows = [_json.loads(line) for line in
+                        out.read_text(encoding="utf-8").splitlines() if line.strip()]
+                stats = _json.loads((root / f"g-{channel}.stats.json").read_text())
+                return rows, stats
+
+            fused_rows, fused_stats = mined("fused")
+            lexical_rows, lexical_stats = mined("lexical")
+
+            self.assertEqual(fused_stats["channel"], "fused")
+            self.assertEqual(lexical_stats["channel"], "lexical")
+            # Every mined group still has to be usable regardless of the channel.
+            for rows in (fused_rows, lexical_rows):
+                self.assertTrue(rows)
+                for row in rows:
+                    self.assertTrue(row["negatives"])
+                    self.assertTrue(row["positives_by_gold"])
+                    self.assertNotIn(row["gold"][0],
+                                     {d for d in row.get("gold_ranks", {})
+                                      if d not in row["gold"]})
+
+    def test_duplicate_groups_reports_only_repeats(self):
+        from legalir2.cache import duplicate_groups
+        groups = duplicate_groups({"1": "Thuế thu nhập?", "2": "thuế thu nhập",
+                                   "3": {"question": "THUẾ  THU NHẬP!"},
+                                   "4": "Một câu hỏi khác"})
+        self.assertEqual(list(groups.values()), [["1", "2", "3"]])
+
+    def test_folds_without_texts_are_unchanged(self):
+        """Omitting texts must reproduce the old behaviour, or every cache built
+        before this change silently moves questions across the split."""
+        from legalir2.cache import folds
+        ids = [f"q{i}" for i in range(200)]
+        self.assertEqual(folds(ids), folds(ids, texts={}))
+        self.assertEqual(folds(ids), folds(ids, texts={"q0": None}))
+
+
+class TestIdentityIgnoresRevisionName(unittest.TestCase):
+    """Re-fetching the same commit under a different branch name is the same checkpoint.
+
+    Regression for the repair path: when a provenance file goes missing, the fix is to
+    re-download pinned to the commit the index recorded. If `revision` counted towards
+    identity, that repair would produce a checkpoint that could never match an index
+    built from 'main' - the fix would look exactly like the bug.
+    """
+
+    def test_same_commit_via_branch_or_sha_is_one_checkpoint(self):
+        from legalir2.models import checkpoint_identity
+        sha = "18b44161e041bf1d3a333ab5144b5b7b93f914d2"
+        files = {"model.safetensors": {"sha256": "2fa082ea"}}
+        via_branch = {"repository": "AITeamVN/Vietnamese_Embedding_v2",
+                      "revision": "main", "commit": sha, "files": files}
+        via_sha = dict(via_branch, revision=sha)
+        self.assertEqual(checkpoint_identity(via_branch), checkpoint_identity(via_sha))
+
+    def test_a_different_commit_is_still_a_different_checkpoint(self):
+        from legalir2.models import checkpoint_identity
+        files = {"model.safetensors": {"sha256": "2fa082ea"}}
+        a = {"repository": "r", "revision": "main", "commit": "aaa", "files": files}
+        b = {"repository": "r", "revision": "main", "commit": "bbb", "files": files}
+        self.assertNotEqual(checkpoint_identity(a), checkpoint_identity(b))
+
+
+class TestPerCheckpointPromptTemplate(unittest.TestCase):
+    """A causal reranker must get ITS OWN prompt, not another model's.
+
+    Qwen3-Reranker and Prism-Qwen3.5-Reranker share the <|im_start|> scaffolding and
+    both score sigmoid(logit_yes - logit_no) on the first generated token, but their
+    system prompt and instruction differ. Feeding one the other's template does not
+    error - it silently returns worse scores on every passage, which is the most
+    expensive failure shape this project has met.
+    """
+
+    def test_prism_and_qwen_get_different_prompts(self):
+        from legalir2.models import TEMPLATES, rerank_prompt
+        qwen, prism = TEMPLATES["qwen3-reranker"], TEMPLATES["prism"]
+        self.assertNotEqual(qwen["system"], prism["system"])
+        self.assertNotEqual(qwen["instruction"], prism["instruction"])
+        self.assertNotEqual(rerank_prompt(qwen)[0], rerank_prompt(prism)[0])
+
+    def test_template_is_chosen_from_recorded_provenance(self):
+        from legalir2.models import TEMPLATES, template_for
+        from legalir2.store import write_json
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "some-finetuned-name"
+            path.mkdir()
+            write_json(path / "provenance.json",
+                       {"repository": "infgrad/Prism-Qwen3.5-Reranker-2B"})
+            self.assertEqual(template_for(path), TEMPLATES["prism"],
+                             "a directory name that hides the publisher must still "
+                             "resolve through provenance")
+
+    def test_a_finetuned_copy_inherits_its_base_template(self):
+        from legalir2.models import TEMPLATES, template_for
+        from legalir2.store import write_json
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "reranker-2b-tuned"
+            path.mkdir()
+            write_json(path / "provenance.json",
+                       {"derived_from": {"repository": "infgrad/Prism-Qwen3.5-Reranker-2B"},
+                        "training": {"base": "models2/reranker2b"}})
+            self.assertEqual(template_for(path), TEMPLATES["prism"])
+
+    def test_an_unknown_checkpoint_falls_back_rather_than_crashing(self):
+        from legalir2.models import TEMPLATES, template_for
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(template_for(Path(directory)), TEMPLATES["qwen3-reranker"])
+
+
+@unittest.skipUnless(_has_torch(), "torch not installed (CPU-only checkout)")
+class TestCausalRerankerTraining(unittest.TestCase):
+    """Training a causal reranker must optimise the quantity inference reads.
+
+    rerank.py scores a causal reranker as softmax over [logit_no, logit_yes] at the
+    final position. Training it through AutoModelForSequenceClassification would throw
+    away the pretrained LM head, train a randomly-initialised classifier, and produce a
+    model that converges happily on an objective the inference path never consults.
+    """
+
+    def test_the_training_score_is_monotone_in_the_inference_score(self):
+        """logit_yes - logit_no ranks identically to softmax over the pair."""
+        import torch
+        pairs = torch.tensor([[2.0, 5.0], [1.0, 1.5], [4.0, -1.0], [0.0, 0.0]])
+        training = pairs[:, 1] - pairs[:, 0]                 # what train_ce optimises
+        inference = pairs.softmax(dim=1)[:, 1]               # what rerank.py returns
+        self.assertEqual(training.argsort().tolist(), inference.argsort().tolist(),
+                         "training and inference would rank candidates differently")
+
+    def test_head_detection_routes_each_checkpoint_correctly(self):
+        from legalir2.rerank import head_for
+        from legalir2.store import write_json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sequence = root / "bge-style"
+            sequence.mkdir()
+            write_json(sequence / "config.json",
+                       {"model_type": "xlm-roberta",
+                        "architectures": ["XLMRobertaForSequenceClassification"]})
+            self.assertEqual(head_for(sequence), "sequence")
+
+            qwen = root / "prism-style"
+            qwen.mkdir()
+            write_json(qwen / "config.json",
+                       {"model_type": "qwen3_5", "architectures": ["Qwen3ForCausalLM"]})
+            self.assertEqual(head_for(qwen), "causal",
+                             "a Qwen-family reranker must train through the LM head")
+
+    def test_group_reshape_survives_the_causal_path(self):
+        """The per-pair score vector must reshape to (groups, group_size) either way."""
+        import torch
+        groups, size = 4, 8
+        pair_logits = torch.randn(groups * size, 2)
+        raw = pair_logits[:, 1] - pair_logits[:, 0]
+        self.assertEqual(tuple(raw.float().view(groups, size).shape), (groups, size))

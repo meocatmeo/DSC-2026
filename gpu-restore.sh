@@ -63,12 +63,30 @@ fi
 
 # Checkpoints trained before the provenance fix carry the base model's hashes, which
 # makes verify-models call good weights corrupt. Retire that file rather than trust it.
+#
+# `training.json` is the test, and it has to be. A BASE checkpoint's provenance also
+# has a "files" block and no "derived_from" - that is what a downloaded model's
+# provenance correctly looks like - so keying on those alone retires the bases too.
+# Doing exactly that destroyed the embedder's identity and made every dense index on
+# the box unloadable, six hours into a run. Only a directory this project trained has
+# a training.json in it.
 for d in models2/*/; do
   d="${d%/}"
+  [ -f "$d/training.json" ] || continue          # a base checkpoint: leave it alone
   if [ -f "$d/provenance.json" ] && ! grep -q derived_from "$d/provenance.json" 2>/dev/null \
      && grep -q '"files"' "$d/provenance.json" 2>/dev/null; then
     step "retiring stale base provenance in $d (it describes the untrained weights)"
     mv "$d/provenance.json" "$d/provenance.base.json"
+  fi
+done
+
+# And undo the damage if an earlier version of this script already did it.
+for d in models2/*/; do
+  d="${d%/}"
+  if [ -f "$d/provenance.base.json" ] && [ ! -f "$d/provenance.json" ] \
+     && [ ! -f "$d/training.json" ]; then
+    step "restoring provenance for base checkpoint $d"
+    mv "$d/provenance.base.json" "$d/provenance.json"
   fi
 done
 
@@ -104,13 +122,16 @@ done
 say "what to run next"
 if [ "$HAVE_RERANKER" = 1 ]; then
   cat <<'NEXT'
-  Your trained rerankers are back. Phase four is the current plan:
+  The shipped 0.9493 system and its 0.6B reranker are restored. Run the active,
+  guarded document-level experiment:
 
-      tmux new -s p4        # from OUTSIDE tmux
-      bash gpu-auto4.sh
+      tmux new -s p4                     # from OUTSIDE tmux
+      bash gpu-phase4.sh multipos
 
-  ~9 h unattended: multi-positive loss, learned rank fusion, the rerank sweep, then
-  the ceiling stage. Logs ship to Drive every 60 s:
+  This stage validates restored groups, checkpoint provenance, and validation output
+  before reusing anything. It never selects the Qwen 2B checkpoint.
+
+  Logs ship to Drive every 60 seconds:
 
       rclone cat gdrive:DSC-2026-results/logs/STATUS.txt
 NEXT

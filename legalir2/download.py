@@ -34,15 +34,36 @@ def resolve(repo, revision="main"):
     return payload["sha"], [f["rfilename"] for f in payload.get("siblings", [])]
 
 
-def fetch(repo, sha, name, target):
+def fetch(repo, sha, name, target, progress=True):
+    """Stream one file to disk, hashing as it goes.
+
+    Progress is printed WHILE a file downloads, not after. The weight shards are
+    thousands of times larger than everything else in the repository, and they sort
+    into the middle of the listing - so a per-file print looks like three instant
+    lines followed by several minutes of nothing, which is indistinguishable from a
+    hang on a box you are paying for by the hour.
+    """
     url = f"{ENDPOINT}/{repo}/resolve/{sha}/{name}"
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_suffix(target.suffix + ".part")
     digest = hashlib.sha256()
     with _request(url) as response, partial.open("wb") as stream:
+        total = int(response.headers.get("Content-Length") or 0)
+        loud = progress and total > 64e6      # only the shards are worth narrating
+        seen, last, started = 0, 0.0, time.time()
+        if loud:
+            print(f"  {repo}: {name} ({total / 1e6:.0f} MB) ...", flush=True)
         while block := response.read(1 << 20):
             digest.update(block)
             stream.write(block)
+            seen += len(block)
+            now = time.time()
+            if loud and now - last >= 10:
+                last = now
+                rate = seen / max(1e-6, now - started) / 1e6
+                eta = (total - seen) / 1e6 / max(rate, 1e-9)
+                print(f"    {seen / 1e6:>7.0f} / {total / 1e6:.0f} MB  "
+                      f"{rate:.0f} MB/s  eta {eta:.0f}s", flush=True)
     partial.replace(target)
     return digest.hexdigest(), target.stat().st_size
 
@@ -58,9 +79,34 @@ def download(repo, directory, revision="main"):
         wanted += [n for n in names if n.startswith("pytorch_model-") and n.endswith(".bin")]
     if "config.json" not in wanted:
         raise ValueError(f"{repo} does not publish config.json at revision {sha}")
+    # A download has no resume, so a connection that drops at 3.5 GB of 4 GB costs the
+    # whole thing again. Files already verified against THIS commit are reused: the sha
+    # has to match what a previous successful run recorded, so this trusts a hash rather
+    # than the mere presence of a file, and a truncated or tampered shard still refetches.
+    have = {}
+    prior = directory / "provenance.json"
+    if prior.is_file():
+        try:
+            record = json.loads(prior.read_text(encoding="utf-8"))
+            if record.get("commit") == sha:
+                have = record.get("files") or {}
+        except (ValueError, OSError):
+            have = {}
+
     files, started = {}, time.time()
     for name in sorted(set(wanted)):
         target = directory / name
+        known = have.get(name)
+        if known and target.is_file() and target.stat().st_size == known.get("bytes"):
+            digest = hashlib.sha256()
+            with target.open("rb") as stream:
+                for block in iter(lambda: stream.read(1 << 20), b""):
+                    digest.update(block)
+            if digest.hexdigest() == known.get("sha256"):
+                files[name] = known
+                print(f"  {repo}: {name} {known['bytes'] / 1e6:.1f} MB (already here)",
+                      flush=True)
+                continue
         try:
             digest, size = fetch(repo, sha, name, target)
         except urllib.error.HTTPError as error:

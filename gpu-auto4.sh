@@ -152,7 +152,7 @@ trap cleanup EXIT INT TERM
 backup() {
   command -v rclone >/dev/null || { step "rclone missing - skipping backup"; return 0; }
   step "backing up weights and outputs to $RESULTS"
-  for d in models2/reranker-mp models2/reranker-tuned-idx models2/reranker-g32 \
+  for d in models2/reranker-doc models2/reranker-tuned-idx models2/reranker-g32 \
            models2/embedding-tuned; do
     [ -f "$d/config.json" ] && rclone copy "$d" "$RESULTS/models/$(basename "$d")" \
         --transfers 4 2>&1 | tail -2 || true
@@ -199,7 +199,7 @@ step "watch from anywhere: rclone cat $RESULTS/logs/STATUS.txt"
 # only the checkpoint is cleared.
 if ! run_stage multipos; then
   step "retrying multipos once - the mined groups are kept, only the checkpoint is redone"
-  rm -rf models2/reranker-mp
+  rm -rf models2/reranker-doc
   run_stage multipos || true
 fi
 

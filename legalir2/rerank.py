@@ -9,7 +9,8 @@ Both run entirely from local weights. Scores are order preserving only within a
 single question, so they are always used as a ranking, never compared across
 questions.
 """
-from .models import INSTRUCTION, RERANK_PREFIX, RERANK_SUFFIX, Local, clamp_length
+from .models import (INSTRUCTION, RERANK_PREFIX, RERANK_SUFFIX, Local, clamp_length,
+                     rerank_prompt, template_for)
 
 
 def head_for(path):
@@ -30,11 +31,19 @@ class Reranker:
         self.max_length = clamp_length(max_length, self.local.config, self.local.tokenizer,
                                        f"reranker {self.local.path.name}")
         self.context_limit = self.local.context_limit
+        self.template = None
         if self.head == "causal":
             tokenizer = self.local.tokenizer
-            self.prefix = tokenizer.encode(RERANK_PREFIX, add_special_tokens=False)
-            self.suffix = tokenizer.encode(RERANK_SUFFIX, add_special_tokens=False)
+            self.template = template_for(path)
+            prefix, suffix = rerank_prompt(self.template)
+            self.prefix = tokenizer.encode(prefix, add_special_tokens=False)
+            self.suffix = tokenizer.encode(suffix, add_special_tokens=False)
             self.labels = [tokenizer.convert_tokens_to_ids(x) for x in ("no", "yes")]
+            if any(i is None or i < 0 for i in self.labels):
+                raise ValueError(
+                    f"{path}: this tokenizer has no single-token 'yes'/'no', so "
+                    "sigmoid(logit_yes - logit_no) cannot be read from one position. "
+                    "The checkpoint needs a different scoring head.")
 
     # ------------------------------------------------------------------ scoring
 
@@ -67,7 +76,8 @@ class Reranker:
             raise ValueError("Reranker max length is too short for the prompt")
         out = []
         for start in range(0, len(passages), batch_size):
-            batch = [f"<Instruct>: {INSTRUCTION}\n<Query>: {query}\n<Document>: {text}"
+            instruction = (self.template or {}).get("instruction", INSTRUCTION)
+            batch = [f"<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {text}"
                      for text in passages[start:start + batch_size]]
             ids = self.local.tokenizer(batch, add_special_tokens=False, truncation=True,
                                        max_length=budget)["input_ids"]

@@ -1,0 +1,3091 @@
+{
+ "sources": {
+  "_results\\outputs\\v4-stacked.diagnostics.json": "de9aecf0f3aebc921c30baad8ff704ffa338f7a7b821b721e08dc2d87c39105c",
+  "_results\\outputs\\submission-v4.run.json": "2de59879cf0d1ca97fc777d58431ba63aaf08aa778061d03efe68a70ce939d85",
+  "artifacts\\splits\\train.json": "63e00bd4b59878029cfc6d679360c59c0c6e0eb8f73e005894d28da3e4960393",
+  "artifacts\\splits\\validation.json": "2602da03a5a5852022331fd506ff88f88c9de94e7bfd7836a96d77d545e75096"
+ },
+ "settings": {
+  "candidates": 50,
+  "passages": 3,
+  "shortlist": 200,
+  "chunk_candidates": 600,
+  "lexical_weight": 0.75,
+  "dense_weight": 1.0,
+  "rrf_constant": 60,
+  "rerank_blend": 0.02,
+  "context_radius": 0,
+  "rerank_batch": 8,
+  "rerank_max_length": 768,
+  "aggregate": "max_plus",
+  "aggregate_weight": 0.2,
+  "stage2_candidates": 25,
+  "reranker_weights": null,
+  "top_k": 5,
+  "stacker": "outputs/v4-stacker.json"
+ },
+ "models": {
+  "stacker": "outputs/v4-stacker.json",
+  "rerankers": [
+   "models2/reranker-g32"
+  ],
+  "embedding": "models2/embedding",
+  "dense": "artifacts2/dense"
+ },
+ "parameters": {
+  "components": {
+   "embedding": 567754752,
+   "reranker1": 567755777
+  },
+  "total": 1135510529,
+  "budget": 4000000000,
+  "headroom": 2864489471
+ },
+ "validation_recall": 0.9453968253968253,
+ "candidate_recall": {
+  "5": 0.8914285714285715,
+  "20": 0.967936507936508,
+  "50": 0.9804761904761905,
+  "100": 0.9845238095238096,
+  "200": 0.9880952380952381
+ },
+ "buckets": {
+  "single": {
+   "questions": 957,
+   "recall": 0.9613375130616509,
+   "missed_gold_documents": 37,
+   "missed_gold_inside_rerank_pool": 27,
+   "lost_macro_recall": 0.035238095238095235,
+   "recoverable_macro_recall_at_actual_depth": 0.025714285714285714
+  },
+  "multi": {
+   "questions": 93,
+   "recall": 0.7813620071684588,
+   "missed_gold_documents": 49,
+   "missed_gold_inside_rerank_pool": 23,
+   "lost_macro_recall": 0.019365079365079363,
+   "recoverable_macro_recall_at_actual_depth": 0.009365079365079366
+  }
+ },
+ "misses": [
+  {
+   "question_id": "114140",
+   "question": "Hành vi xây dựng trang trại chăn nuôi cách khu vực trường học 150m thì bị xử phạt như thế nào?",
+   "gold": "181685",
+   "gold_count": 2,
+   "candidate_rank": 57,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "TIÊU CHUẨN QUỐC GIA TCVN 9121 : 2012 TRẠI CHĂN NUÔI GIA SÚC LỚN - YÊU CẦU CHUNG",
+   "predicted": [
+    {
+     "id": "293254",
+     "title": "Nghi dinh 14 2021 ND CP xu phat vi pham hanh chinh ve chan nuoi 466330 | 14/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH VỀ CHĂN NUÔI"
+    },
+    {
+     "id": "108148",
+     "title": "Nghi dinh 130 2021 ND CP xu phat vi pham hanh chinh bao tro xa hoi va tre em 499523 | 130/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC BẢO TRỢ, TRỢ GIÚP XÃ HỘI VÀ TRẺ EM"
+    },
+    {
+     "id": "153413",
+     "title": "Nghi dinh 07 2022 ND CP sua doi Nghi dinh xu phat vi pham hanh chinh linh vuc lam nghiep 500253 | 07/2022/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH VỀ XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC LÂM NGHIỆP; BẢO VỆ VÀ KIỂM DỊCH THỰC VẬT; THÚ Y; CHĂN NUÔI"
+    },
+    {
+     "id": "245154",
+     "title": "Bo luat hinh su 2015 296661 | 100/2015/QH13 | QUỐC HỘI"
+    },
+    {
+     "id": "208373",
+     "title": "Nghi dinh 03 2022 ND CP xu phat vi pham hanh chinh linh vuc phong chong thien tai 500041 | 03/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC PHÒNG, CHỐNG THIÊN TAI; THỦY LỢI; ĐÊ ĐIỀU"
+    }
+   ]
+  },
+  {
+   "question_id": "9060",
+   "question": "Tốt nghiệp đại học chuyên ngành tin thì có cần chứng chỉ tin học theo yêu cầu của giáo viên THPT hạng III không?",
+   "gold": "154615",
+   "gold_count": 1,
+   "candidate_rank": 14,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 04 2021 TT BGDDT ma so vien chuc giang day trong truong trung hoc pho thong cong lap 464400 | 04/2021/TT-BGDĐT | THÔNG TƯ QUY ĐỊNH MÃ SỐ, TIÊU CHUẨN CHỨC DANH NGHỀ NGHIỆP VÀ BỔ NHIỆM, XẾP LƯƠNG VIÊN CHỨC GIẢNG DẠY TRONG CÁC TRƯỜNG TRUNG HỌC PHỔ THÔNG CÔNG LẬP",
+   "predicted": [
+    {
+     "id": "199066",
+     "title": "Nghi dinh 115 2020 ND CP tuyen dung su dung quan ly vien chuc 453968 | 115/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TUYỂN DỤNG, SỬ DỤNG VÀ QUẢN LÝ VIÊN CHỨC"
+    },
+    {
+     "id": "256762",
+     "title": "Quyet dinh 01 2007 QD BGDDT Quy che to chuc hoat dong trung tam giao duc thuong xuyen 16733 | 01/2007/QĐ-BGDĐT | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ TỔ CHỨC VÀ HOẠT ĐỘNG CỦA TRUNG TÂM GIÁO DỤC THƯỜNG XUYÊN. BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO TỔ CHỨC VÀ HOẠT ĐỘNG CỦA TRUNG TÂM GIÁO DỤC THƯỜNG XUYÊN"
+    },
+    {
+     "id": "215094",
+     "title": "Nghi dinh 161 2018 ND CP tuyen dung su dung quan ly cong vien chuc thuc hien che do hop dong 336803 | 161/2018/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ QUY ĐỊNH VỀ TUYỂN DỤNG CÔNG CHỨC, VIÊN CHỨC, NÂNG NGẠCH CÔNG CHỨC, THĂNG HẠNG VIÊN CHỨC VÀ THỰC HIỆN CHẾ ĐỘ HỢP ĐỒNG MỘT SỐ LOẠI CÔNG VIỆC TRONG CƠ QUAN HÀNH CHÍNH NHÀ NƯỚC, ĐƠN VỊ SỰ NGHIỆP CÔNG LẬP"
+    },
+    {
+     "id": "58662",
+     "title": "Nghi dinh 138 2020 ND CP tuyen dung su dung va quan ly cong chuc 458542 | 138/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TUYỂN DỤNG, SỬ DỤNG VÀ QUẢN LÝ CÔNG CHỨC"
+    },
+    {
+     "id": "63532",
+     "title": "Thong tu 41 2018 TT BLDTBXH quy dinh ve khoi luong kien thuc toi thieu ma nguoi hoc dat duoc 422049 | 41/2018/TT-BLĐTBXH | THÔNG TƯ BAN HÀNH QUY ĐỊNH KHỐI LƯỢNG KIẾN THỨC TỐI THIỂU, YÊU CẦU VỀ NĂNG LỰC MÀ NGƯỜI HỌC ĐẠT ĐƯỢC SAU KHI TỐT NGHIỆP TRÌNH ĐỘ TRUNG CẤP, TRÌNH ĐỘ CAO ĐẲNG CÁC NGÀNH, NGHỀ THUỘC LĨNH VỰC BÁO CHÍ, THÔNG TIN, KINH DOANH VÀ QUẢN LÝ"
+    }
+   ]
+  },
+  {
+   "question_id": "132594",
+   "question": "Trình tự thực hiện thủ tục gia hạn nộp thuế như thế nào?",
+   "gold": "303485",
+   "gold_count": 1,
+   "candidate_rank": 8,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Quyet dinh 115 QD BTC 2023 cong bo thu tuc hanh chinh linh vuc thue 554178 | 115/QĐ-BTC | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH ĐƯỢC SỬA ĐỔI TRONG LĨNH VỰC THUẾ THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ TÀI CHÍNH BỘ TRƯỞNG BỘ TÀI CHÍNH",
+   "predicted": [
+    {
+     "id": "15138",
+     "title": "Nghi dinh 12 2023 ND CP gia han thoi han nop thue thu nhap doanh nghiep ca nhan tien thue dat 563407 | 12/2023/NĐ-CP | NGHỊ ĐỊNH GIA HẠN THỜI HẠN NỘP THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP DOANH NGHIỆP, THUẾ THU NHẬP CÁ NHÂN VÀ TIỀN THUÊ ĐẤT TRONG NĂM"
+    },
+    {
+     "id": "277320",
+     "title": "34/2022/NĐ-CP | NGHỊ ĐỊNH GIA HẠN THỜI HẠN NỘP THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP DOANH NGHIỆP, THUẾ THU NHẬP CÁ NHÂN VÀ TIỀN THUÊ ĐẤT TRONG NĂM"
+    },
+    {
+     "id": "157195",
+     "title": "Nghi dinh 34 2022 ND CP gia han nop thue gia tri gia tang thu nhap doanh nghiep ca nhan tien thue da | 34/2022/NĐ-CP | NGHỊ ĐỊNH GIA HẠN THỜI HẠN NỘP THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP DOANH NGHIỆP, THUẾ THU NHẬP CÁ NHÂN VÀ TIỀN THUÊ ĐẤT TRONG NĂM"
+    },
+    {
+     "id": "260960",
+     "title": "Nghi dinh 41 2020 ND CP gia han thoi han nop thue va tien thue dat 438649 | 41/2020/NĐ-CP | NGHỊ ĐỊNH GIA HẠN THỜI HẠN NỘP THUẾ VÀ TIỀN THUÊ ĐẤT"
+    },
+    {
+     "id": "50615",
+     "title": "Nghi dinh 52 2021 ND CP gia han thoi han nop thue gia tri gia tang thue thu nhap doanh nghiep 471423 | 52/2021/NĐ-CP | NGHỊ ĐỊNH GIA HẠN THỜI HẠN NỘP THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP DOANH NGHIỆP, THUẾ THU NHẬP CÁ NHÂN VÀ TIỀN THUÊ ĐẤT TRONG NĂM"
+    }
+   ]
+  },
+  {
+   "question_id": "60858",
+   "question": "Chi cục trưởng Chi cục Thuế cần đảm bảo thêm các trình độ, chứng chỉ nào khác?",
+   "gold": "262254",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 1,
+   "gold_title": "Thong tu 01 2014 TT BGDDT Khung nang luc ngoai ngu 6 bac Viet Nam 220349 | 01/2014/TT-BGDĐT | THÔNG TƯ BAN HÀNH KHUNG NĂNG LỰC NGOẠI NGỮ 6 BẬC DÙNG CHO VIỆT NAM",
+   "predicted": [
+    {
+     "id": "128674",
+     "title": "Quyet dinh 558 QD TCT 2017 Tieu chuan cac chuc danh lanh dao thuoc Tong cuc Thue 411658 | 558/QĐ-TCT | QUYẾT ĐỊNH BAN HÀNH TIÊU CHUẨN CÁC CHỨC DANH LÃNH ĐẠO THUỘC TỔNG CỤC THUẾ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "200046",
+     "title": "Quyet dinh 110 QD BTC 2019 chuc nang nhiem vu quyen han to chuc cua Chi cuc Thue quan huyen 407633 | 110/QĐ-BTC | QUYẾT ĐỊNH QUY ĐỊNH CHỨC NĂNG, NHIỆM VỤ, QUYỀN HẠN VÀ CƠ CẤU TỔ CHỨC CỦA CHI CỤC THUẾ QUẬN, HUYỆN, THỊ XÃ, THÀNH PHỐ VÀ CHI CỤC THUẾ KHU VỰC TRỰC THUỘC CỤC THUẾ TỈNH, THÀNH PHỐ BỘ TRƯỞNG BỘ TÀI CHÍNH"
+    },
+    {
+     "id": "200302",
+     "title": "Quyet dinh 717 QD TCDT Tieu chuan chuc danh can bo lanh dao quan ly 133232 | 717/QĐ-TCDT | QUYẾT ĐỊNH BAN HÀNH TIÊU CHUẨN CHỨC DANH CÁN BỘ LÃNH ĐẠO, QUẢN LÝ CÁC TỔ CHỨC THUỘC VÀ TRỰC THUỘC TỔNG CỤC DỰ TRỮ NHÀ NƯỚC TỔNG CỤC TRƯỞNG TỔNG CỤC DỰ TRỮ NHÀ NƯỚC"
+    },
+    {
+     "id": "252002",
+     "title": "Quyet dinh 1228 QD TCT 2016 doi tuong tieu chuan danh hieu thi dua hinh thuc khen thuong 372631 | 1228/QĐ-TCT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH VỀ ĐỐI TƯỢNG, TIÊU CHUẨN DANH HIỆU THI ĐUA HÌNH THỨC KHEN THƯỞNG THI ĐUA TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "286384",
+     "title": "Quyet dinh 2282 QD TCT 2017 quy che lam viec co quan Tong cuc Thue 514258 | 2282/QĐ-TCT | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ LÀM VIỆC CỦA CƠ QUAN TỔNG CỤC THUẾ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "60858",
+   "question": "Chi cục trưởng Chi cục Thuế cần đảm bảo thêm các trình độ, chứng chỉ nào khác?",
+   "gold": "280768",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 2,
+   "gold_title": "Thong tu 03 2014 TT BTTTT Chuan ky nang su dung cong nghe thong tin 223113 | 03/2014/TT-BTTTT | THÔNG TƯ QUY ĐỊNH CHUẨN KỸ NĂNG SỬ DỤNG CÔNG NGHỆ THÔNG TIN",
+   "predicted": [
+    {
+     "id": "128674",
+     "title": "Quyet dinh 558 QD TCT 2017 Tieu chuan cac chuc danh lanh dao thuoc Tong cuc Thue 411658 | 558/QĐ-TCT | QUYẾT ĐỊNH BAN HÀNH TIÊU CHUẨN CÁC CHỨC DANH LÃNH ĐẠO THUỘC TỔNG CỤC THUẾ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "200046",
+     "title": "Quyet dinh 110 QD BTC 2019 chuc nang nhiem vu quyen han to chuc cua Chi cuc Thue quan huyen 407633 | 110/QĐ-BTC | QUYẾT ĐỊNH QUY ĐỊNH CHỨC NĂNG, NHIỆM VỤ, QUYỀN HẠN VÀ CƠ CẤU TỔ CHỨC CỦA CHI CỤC THUẾ QUẬN, HUYỆN, THỊ XÃ, THÀNH PHỐ VÀ CHI CỤC THUẾ KHU VỰC TRỰC THUỘC CỤC THUẾ TỈNH, THÀNH PHỐ BỘ TRƯỞNG BỘ TÀI CHÍNH"
+    },
+    {
+     "id": "200302",
+     "title": "Quyet dinh 717 QD TCDT Tieu chuan chuc danh can bo lanh dao quan ly 133232 | 717/QĐ-TCDT | QUYẾT ĐỊNH BAN HÀNH TIÊU CHUẨN CHỨC DANH CÁN BỘ LÃNH ĐẠO, QUẢN LÝ CÁC TỔ CHỨC THUỘC VÀ TRỰC THUỘC TỔNG CỤC DỰ TRỮ NHÀ NƯỚC TỔNG CỤC TRƯỞNG TỔNG CỤC DỰ TRỮ NHÀ NƯỚC"
+    },
+    {
+     "id": "252002",
+     "title": "Quyet dinh 1228 QD TCT 2016 doi tuong tieu chuan danh hieu thi dua hinh thuc khen thuong 372631 | 1228/QĐ-TCT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH VỀ ĐỐI TƯỢNG, TIÊU CHUẨN DANH HIỆU THI ĐUA HÌNH THỨC KHEN THƯỞNG THI ĐUA TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "286384",
+     "title": "Quyet dinh 2282 QD TCT 2017 quy che lam viec co quan Tong cuc Thue 514258 | 2282/QĐ-TCT | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ LÀM VIỆC CỦA CƠ QUAN TỔNG CỤC THUẾ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "143262",
+   "question": "Trường hợp công chức lãnh đạo không được bổ nhiệm lại thì có được phân công công tác khác hay không?",
+   "gold": "186367",
+   "gold_count": 1,
+   "candidate_rank": 4,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "1294/QĐ-KTNN | QUYẾT ĐỊNH BAN HÀNH QUY ĐỊNH VỀ BỔ NHIỆM, BỔ NHIỆM LẠI, TỪ CHỨC VÀ MIỄN NHIỆM CÔNG CHỨC, VIÊN CHỨC LÃNH ĐẠO CỦA KIỂM TOÁN NHÀ NƯỚC TỔNG KIỂM TOÁN NHÀ NƯỚC",
+   "predicted": [
+    {
+     "id": "58662",
+     "title": "Nghi dinh 138 2020 ND CP tuyen dung su dung va quan ly cong chuc 458542 | 138/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TUYỂN DỤNG, SỬ DỤNG VÀ QUẢN LÝ CÔNG CHỨC"
+    },
+    {
+     "id": "194238",
+     "title": "Quyet dinh 828 QD BTNMT 2018 dieu dong luan chuyen cong chuc vien chuc lanh dao 461761 | 828/QĐ-BTNMT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH VỀ TRÌNH TỰ, THỦ TỤC VÀ HỒ SƠ BỔ NHIỆM, BỔ NHIỆM LẠI, ĐIỀU ĐỘNG, LUÂN CHUYỂN, BIỆT PHÁI, THUYÊN CHUYỂN CÔNG TÁC, THÔI GIỮ CHỨC DANH LÃNH ĐẠO, QUẢN LÝ ĐỐI VỚI CÔNG CHỨC, VIÊN CHỨC LÃNH ĐẠO, QUẢN LÝ CÁC ĐƠN VỊ, TỔ CHỨC THUỘC BỘ TÀI NGUYÊN VÀ MÔI"
+    },
+    {
+     "id": "118505",
+     "title": "Quyet dinh 1699 QD BTC 2018 bo nhiem bo nhiem lai cong chuc lanh dao don vi thuoc Bo Tai chinh 39726 | 1699/QĐ-BTC | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ BỔ NHIỆM, BỔ NHIỆM LẠI, TỪ CHỨC, MIỄN NHIỆM CÔNG CHỨC, VIÊN CHỨC LÃNH ĐẠO TẠI CÁC ĐƠN VỊ THUỘC VÀ TRỰC THUỘC BỘ TÀI CHÍNH BỘ TRƯỞNG BỘ TÀI CHÍNH"
+    },
+    {
+     "id": "289354",
+     "title": "Quyet dinh 328 QD BTP 2018 Quy che bo nhiem bo nhiem lai tu chuc cong chuc cua Bo Tu phap 381789 | 328/QĐ-BTP | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ BỔ NHIỆM, BỔ NHIỆM LẠI, TỪ CHỨC, MIỄN NHIỆM, ĐIỀU ĐỘNG, BIỆT PHÁI, LUÂN CHUYỂN CÔNG CHỨC, VIÊN CHỨC CỦA BỘ TƯ PHÁP BỘ TRƯỞNG BỘ TƯ PHÁP"
+    },
+    {
+     "id": "220359",
+     "title": "Luat can bo cong chuc 2008 22 2008 QH12 82202 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "13128",
+   "question": "Cơ quan có thẩm quyền tiếp nhận phản ánh ý kiến như thế nào?",
+   "gold": "162178",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 18 2022 TT BTC sua doi Thong tu 36 2019 TT BTC xo so tu chon so dien toan 506939 | 18/2022/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA THÔNG TƯ SỐ 36/2019/TT-BTC NGÀY 17 THÁNG 6 NĂM 2019 CỦA BỘ TÀI CHÍNH HƯỚNG DẪN HOẠT ĐỘNG KINH DOANH XỔ SỐ TỰ CHỌN SỐ ĐIỆN TOÁN",
+   "predicted": [
+    {
+     "id": "106015",
+     "title": "Nghi dinh 20 2008 ND CP tiep nhan xu ly phan anh kien nghi cua ca nhan to chuc ve quy dinh hanh chin | 20/2008/NĐ-CP | NGHỊ ĐỊNH VỀ VIỆC TIẾP NHẬN, XỬ LÝ PHẢN ÁNH, KIẾN NGHỊ CỦA CÁ NHÂN, TỔ CHỨC VỀ QUY ĐỊNH HÀNH CHÍNH CHÍNH PHỦ"
+    },
+    {
+     "id": "125833",
+     "title": "Luat tiep cong dan 2013 215839 | QUỐC HỘI"
+    },
+    {
+     "id": "184002",
+     "title": "Luat Thuc hien dan chu o co so nam 2022 546085 | LUẬT THỰC HIỆN DÂN CHỦ Ở CƠ SỞ"
+    },
+    {
+     "id": "180514",
+     "title": "Quyet dinh 31 2021 QD TTg Quy che quan ly van hanh Cong Dich vu cong quoc gia 491068 | 31/2021/QĐ-TTg | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ QUẢN LÝ, VẬN HÀNH, KHAI THÁC CỔNG DỊCH VỤ CÔNG QUỐC GIA"
+    },
+    {
+     "id": "76831",
+     "title": "Thong tu 02 2017 TT VPCP huong dan ve nghiep vu kiem soat thu tuc hanh chinh 366111 | 02/2017/TT-VPCP | THÔNG TƯ HƯỚNG DẪN VỀ NGHIỆP VỤ KIỂM SOÁT THỦ TỤC HÀNH CHÍNH"
+    }
+   ]
+  },
+  {
+   "question_id": "156902",
+   "question": "Hộ chăn nuôi gây ô nhiễm môi trường thì theo quy định của pháp luật sẽ xử lý như thế nào?",
+   "gold": "81400",
+   "gold_count": 1,
+   "candidate_rank": 3,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 2,
+   "gold_title": "Nghi dinh 155 2016 ND CP quy dinh xu phat vi pham hanh chinh trong linh vuc bao ve moi truong 331295 | 155/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC BẢO VỆ MÔI TRƯỜNG",
+   "predicted": [
+    {
+     "id": "299694",
+     "title": "Luat so 72 2020 QH14 Bao ve moi truong 2020 431147 | QUỐC HỘI"
+    },
+    {
+     "id": "293254",
+     "title": "Nghi dinh 14 2021 ND CP xu phat vi pham hanh chinh ve chan nuoi 466330 | 14/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH VỀ CHĂN NUÔI"
+    },
+    {
+     "id": "303096",
+     "title": "Nghi dinh 08 2022 ND CP huong dan Luat Bao ve moi truong 479457 | 08/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT BẢO VỆ MÔI TRƯỜNG"
+    },
+    {
+     "id": "245154",
+     "title": "Bo luat hinh su 2015 296661 | 100/2015/QH13 | QUỐC HỘI"
+    },
+    {
+     "id": "18428",
+     "title": "Nghi dinh 45 2022 ND CP xu phat vi pham hanh chinh linh vuc bao ve moi truong 484772 | 45/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC BẢO VỆ MÔI TRƯỜNG"
+    }
+   ]
+  },
+  {
+   "question_id": "122328",
+   "question": "Có được yêu cầu rào chắn lại nếu có người tự ý mở lối tắt đi ngang qua đường sắt không?",
+   "gold": "50885",
+   "gold_count": 1,
+   "candidate_rank": 3,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 54,
+   "gold_title": "Nghi dinh 100 2019 ND CP xu phat vi pham hanh chinh linh vuc giao thong duong bo va duong sat 426369 | 100/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC GIAO THÔNG ĐƯỜNG BỘ VÀ ĐƯỜNG SẮT",
+   "predicted": [
+    {
+     "id": "279475",
+     "title": "25/2018/TT-BGTVT | THÔNG TƯ QUY ĐỊNH VỀ ĐƯỜNG NGANG VÀ CẤP GIẤY PHÉP XÂY DỰNG CÔNG TRÌNH THIẾT YẾU TRONG PHẠM VI ĐẤT DÀNH CHO ĐƯỜNG SẮT"
+    },
+    {
+     "id": "221909",
+     "title": "Luat giao thong duong bo 2008 23 2008 QH12 82203 | QUỐC HỘI"
+    },
+    {
+     "id": "150499",
+     "title": "Luat Duong sat 2017 307545 | QUỐC HỘI"
+    },
+    {
+     "id": "88533",
+     "title": "Nghi dinh 65 2018 ND CP huong dan Luat Duong sat 356280 | 65/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐƯỜNG SẮT"
+    },
+    {
+     "id": "73196",
+     "title": "Quyet dinh 358 QD TTg 2020 dam bao trat tu hanh lang an toan giao thong 436866 | 358/QĐ-TTg | QUYẾT ĐỊNH PHÊ DUYỆT ĐỀ ÁN ĐẢM BẢO TRẬT TỰ HÀNH LANG AN TOÀN GIAO THÔNG VÀ XỬ LÝ DỨT ĐIỂM LỐI ĐI TỰ MỞ QUA ĐƯỜNG SẮT THỦ TƯỚNG CHÍNH PHỦ"
+    }
+   ]
+  },
+  {
+   "question_id": "123452",
+   "question": "Có những loại hợp đồng xây dựng nào?",
+   "gold": "226545",
+   "gold_count": 2,
+   "candidate_rank": 5,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "Nghi dinh 50 2021 ND CP sua doi Nghi dinh 37 2015 ND CP huong dan hop dong xay dung 393920 | 50/2021/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 37/2015/NĐ-CP NGÀY 22 THÁNG 4 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VỀ HỢP ĐỒNG XÂY DỰNG",
+   "predicted": [
+    {
+     "id": "258342",
+     "title": "Nghi dinh 37 2015 ND CP hop dong xay dung 272352 | 37/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VỀ HỢP ĐỒNG XÂY DỰNG"
+    },
+    {
+     "id": "89392",
+     "title": "Luat Xay dung 2014 238644 | 50/2014/QH13 | QUỐC HỘI"
+    },
+    {
+     "id": "20457",
+     "title": "Thong tu 02 2023 TT BXD huong dan hop dong xay dung 557432 | 02/2023/TT-BXD | THÔNG TƯ HƯỚNG DẪN MỘT SỐ NỘI DUNG VỀ HỢP ĐỒNG XÂY DỰNG"
+    },
+    {
+     "id": "35296",
+     "title": "Van ban hop nhat 02 VBHN VPQH 2020 hop nhat Luat Xay dung 457471 | 02/VBHN-VPQH | VĂN PHÒNG QUỐC HỘI"
+    },
+    {
+     "id": "201681",
+     "title": "Luat dau thau 2013 215838 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "67398",
+   "question": "Các biện pháp cảnh vệ nào được áp dụng đối với khu vực trọng yếu thuộc đối tượng cảnh vệ?",
+   "gold": "126826",
+   "gold_count": 2,
+   "candidate_rank": 197,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 1,
+   "gold_title": "Luat An ninh Quoc gia 2004 32 2004 QH11 52656 | 32/2004/QH11 | LUẬT CỦA QUỐC HỘI NƯỚC | SỐ 32/2004/QH11 NGÀY 03 THÁNG 12 NĂM 2004 VỀ AN NINH QUỐC GIA",
+   "predicted": [
+    {
+     "id": "246977",
+     "title": "Luat Canh ve 2017 280117 | QUỐC HỘI"
+    },
+    {
+     "id": "228288",
+     "title": "Nghi dinh 90 2018 ND CP huong dan Luat Canh ve 376625 | 90/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT CẢNH VỆ"
+    },
+    {
+     "id": "232947",
+     "title": "Thong tu 38 2011 TT BKHCN yeu cau ve bao dam an ninh vat lieu hat nhan 134085 | 38/2011/TT-BKHCN | THÔNG TƯ QUY ĐỊNH CÁC YÊU CẦU VỀ BẢO ĐẢM AN NINH VẬT LIỆU HẠT NHÂN VÀ CƠ SỞ HẠT NHÂN"
+    },
+    {
+     "id": "102434",
+     "title": "Bo luat to tung hinh su 2015 296884 | I PHẠM VI ĐIỀU CHỈNH, NHIỆM VỤ, HIỆU LỰC CỦA BỘ LUẬT TỐ TỤNG HÌNH SỰ"
+    },
+    {
+     "id": "210191",
+     "title": "Nghi quyet 16 NQ CP 2023 phien hop chuyen de xay dung phap luat thang 01 553979 | 16/NQ-CP | NGHỊ QUYẾT PHIÊN HỌP CHUYÊN ĐỀ VỀ XÂY DỰNG PHÁP LUẬT THÁNG 01 NĂM 2023 CHÍNH PHỦ"
+    }
+   ]
+  },
+  {
+   "question_id": "42298",
+   "question": "Khái niệm bảo hiểm y tế theo Luật Bảo hiểm y tế 2008",
+   "gold": "288457",
+   "gold_count": 2,
+   "candidate_rank": 197,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 2,
+   "gold_title": "",
+   "predicted": [
+    {
+     "id": "243812",
+     "title": "Luat bao hiem y te 2008 25 2008 QH12 82196 | QUỐC HỘI"
+    },
+    {
+     "id": "40539",
+     "title": "Nghi dinh 146 2018 ND CP huong dan Luat bao hiem y te 357505 | 146/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ"
+    },
+    {
+     "id": "227964",
+     "title": "Luat Bao hiem y te sua doi 2014 238506 | 46/2014/QH13 | LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ"
+    },
+    {
+     "id": "177137",
+     "title": "Thong tu lien tich 41 2014 TTLT BYT BTC huong dan thuc hien bao hiem y te 261252 | 41/2014/TTLT-BYT-BTC | I ĐỐI TƯỢNG THAM GIA, PHƯƠNG THỨC ĐÓNG VÀ TRÁCH NHIỆM ĐÓNG BẢO HIỂM Y TẾ"
+    },
+    {
+     "id": "144025",
+     "title": "Thong tu 40 2015 TT BYT dang ky kham chua benh bao hiem y te ban dau chuyen tuyen 297251 | 40/2015/TT-BYT | THÔNG TƯ QUY ĐỊNH ĐĂNG KÝ KHÁM BỆNH, CHỮA BỆNH BẢO HIỂM Y TẾ BAN ĐẦU VÀ CHUYỂN TUYẾN KHÁM BỆNH, CHỮA BỆNH BẢO HIỂM Y TẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "67484",
+   "question": "Trường hợp nào công chức, viên chức phải đền bù chi phí đào tạo, bồi dưỡng?",
+   "gold": "300362",
+   "gold_count": 1,
+   "candidate_rank": 4,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 4,
+   "gold_title": "Quyet dinh 1280 QD KTNN 2022 Quy che dao tao boi duong Kiem toan nha nuoc 531255 | 1280/QĐ-KTNN | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ ĐÀO TẠO, BỒI DƯỠNG CỦA KIỂM TOÁN NHÀ NƯỚC TỔNG KIỂM TOÁN NHÀ NƯỚC",
+   "predicted": [
+    {
+     "id": "278944",
+     "title": "Nghi dinh 101 2017 ND CP dao tao boi duong can bo cong chuc vien chuc 319214 | 101/2017/NĐ-CP | NGHỊ ĐỊNH VỀ ĐÀO TẠO, BỒI DƯỠNG CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC"
+    },
+    {
+     "id": "161022",
+     "title": "Quyet dinh 133 QD BHXH nam 2013 Quy che Dao tao boi duong cong vien chuc BHXH 174248 | 133/QĐ-BHXH | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY CHẾ ĐÀO TẠO, BỒI DƯỠNG CÔNG CHỨC, VIÊN CHỨC THUỘC HỆ THỐNG BẢO HIỂM XÃ HỘI VIỆT NAM TỔNG GIÁM ĐỐC BẢO HIỂM XÃ HỘI VIỆT NAM"
+    },
+    {
+     "id": "189174",
+     "title": "Quyet dinh 490 QD BNV quy che dao tao boi duong cong vien chuc nguoi lao dong 2016 307680 | 490/QĐ-BNV | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ ĐÀO TẠO, BỒI DƯỠNG CÔNG CHỨC, VIÊN CHỨC, NGƯỜI LAO ĐỘNG CỦA BỘ NỘI VỤ BỘ TRƯỞNG BỘ NỘI VỤ"
+    },
+    {
+     "id": "214081",
+     "title": "Quyet dinh 1616 QD KTNN Quy che dao tao boi duong 2016 323548 | 1616/QĐ-KTNN | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ ĐÀO TẠO, BỒI DƯỠNG CỦA KIỂM TOÁN NHÀ NƯỚC TỔNG KIỂM TOÁN NHÀ NƯỚC"
+    },
+    {
+     "id": "228160",
+     "title": "Quyet dinh 636 QD TANDTC 2018 Quy che dao tao boi duong can bo cong chuc vien chuc Toa an 382122 | 636/QĐ-TANDTC | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ ĐÀO TẠO, BỒI DƯỠNG CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC TÒA ÁN NHÂN DÂN CHÁNH ÁN TÒA ÁN NHÂN DÂN TỐI CAO"
+    }
+   ]
+  },
+  {
+   "question_id": "125746",
+   "question": "Thủ tục hủy quyết định tha tù trước thời hạn có điều kiện được thực hiện như thế nào?",
+   "gold": "245154",
+   "gold_count": 2,
+   "candidate_rank": 15,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 93,
+   "gold_title": "Bo luat hinh su 2015 296661 | 100/2015/QH13 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "68399",
+     "title": "Luat Thi hanh an hinh su 2019 387991 | 41/2019/QH14 LUẬT THI HÀNH ÁN HÌNH SỰ"
+    },
+    {
+     "id": "129861",
+     "title": "Thong tu lien tich 04 2018 TTLT BCA BQP TANDTC VKSNDTC phoi hop thuc hien tha tu truoc thoi han 3645 | 04/2018/TTLT-BCA-BQP-TANDTC-VKSNDTC | THÔNG TƯ LIÊN TỊCH QUY ĐỊNH PHỐI HỢP THỰC HIỆN QUY ĐỊNH CỦA BỘ LUẬT TỐ TỤNG HÌNH SỰ NĂM 2015 VỀ THA TÙ TRƯỚC THỜI HẠN CÓ ĐIỀU KIỆN"
+    },
+    {
+     "id": "102434",
+     "title": "Bo luat to tung hinh su 2015 296884 | I PHẠM VI ĐIỀU CHỈNH, NHIỆM VỤ, HIỆU LỰC CỦA BỘ LUẬT TỐ TỤNG HÌNH SỰ"
+    },
+    {
+     "id": "213257",
+     "title": "Thong tu lien tich 01 2023 TTLT BCA BQP TANDTC VKSNDTC phoi hop thi hanh an hinh su tai cong dong 56 | 01/2023/TTLT-BCA-BQP-TANDTC-VKSNDTC | THÔNG TƯ LIÊN TỊCH QUY ĐỊNH VIỆC PHỐI HỢP TRONG THỰC HIỆN MỘT SỐ QUY ĐỊNH CỦA LUẬT THI HÀNH ÁN HÌNH SỰ VỀ THI HÀNH ÁN HÌNH SỰ TẠI CỘNG ĐỒNG"
+    },
+    {
+     "id": "202211",
+     "title": "Nghi quyet 01 2018 NQ HDTP huong dan Dieu 66 Dieu 106 Bo Luat hinh su ve tha tu truoc thoi han 37845 | 01/2018/NQ-HĐTP | NGHỊ QUYẾT HƯỚNG DẪN ÁP DỤNG ĐIỀU 66 VÀ ĐIỀU 106 CỦA BỘ LUẬT HÌNH SỰ VỀ THA TÙ TRƯỚC THỜI HẠN CÓ ĐIỀU KIỆN HỘI ĐỒNG THẨM PHÁN TÒA ÁN NHÂN DÂN TỐI CAO"
+    }
+   ]
+  },
+  {
+   "question_id": "7332",
+   "question": "Bộ Tài chính hướng dẫn thực hiện Thông tư 31/2022/TT-BTC như thế nào? ",
+   "gold": "96365",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 0,
+   "gold_title": "Nghi dinh 122 2016 ND CP bieu thue xuat nhap khau uu dai danh muc hang hoa muc thue ngoai han ngach | 122/2016/NĐ-CP | NGHỊ ĐỊNH BIỂU THUẾ XUẤT KHẨU, BIỂU THUẾ NHẬP KHẨU ƯU ĐÃI, DANH MỤC HÀNG HÓA VÀ MỨC THUẾ TUYỆT ĐỐI, THUẾ HỖN HỢP, THUẾ NHẬP KHẨU NGOÀI HẠN NGẠCH THUẾ QUAN",
+   "predicted": [
+    {
+     "id": "106258",
+     "title": "5731/TCHQ-TXNK | BỘ TÀI CHÍNH TỔNG CỤC HẢI QUAN"
+    },
+    {
+     "id": "305026",
+     "title": "4891/TCHQ-TXNK | BỘ TÀI CHÍNH TỔNG CỤC HẢI QUAN"
+    },
+    {
+     "id": "292706",
+     "title": "Thong tu 31 2022 TT BTC Danh muc hang hoa xuat nhap khau Viet Nam 343978 | 31/2022/TT-BTC | THÔNG TƯ BAN HÀNH DANH MỤC HÀNG HÓA XUẤT KHẨU, NHẬP KHẨU VIỆT NAM"
+    },
+    {
+     "id": "45451",
+     "title": "Thong tu 04 2022 TT BTC chuc nang cua co quan tai chinh dia phuong thuoc Uy ban tinh 502982 | 04/2022/TT-BTC | THÔNG TƯ HƯỚNG DẪN CHỨC NĂNG, NHIỆM VỤ, QUYỀN HẠN CỦA CƠ QUAN TÀI CHÍNH ĐỊA PHƯƠNG THUỘC ỦY BAN NHÂN DÂN CẤP TỈNH VÀ ỦY BAN NHÂN DÂN CẤP HUYỆN"
+    },
+    {
+     "id": "169914",
+     "title": "Thong tu 41 2022 TT BTC huong dan che do ke toan hoat dong xa hoi tu thien 499976 | 41/2022/TT-BTC | THÔNG TƯ HƯỚNG DẪN CHẾ ĐỘ KẾ TOÁN ÁP DỤNG CHO CÁC HOẠT ĐỘNG XÃ HỘI, TỪ THIỆN"
+    }
+   ]
+  },
+  {
+   "question_id": "27322",
+   "question": "Hồ sơ đăng ký thi THPT quốc gia 2023 mới nhất?",
+   "gold": "249088",
+   "gold_count": 1,
+   "candidate_rank": 35,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 06 2023 TT BGDDT sua doi Quy che thi tot nghiep trung hoc pho thong 560877 | 06/2023/TT-BGDĐT | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA QUY CHẾ THI TỐT NGHIỆP TRUNG HỌC PHỔ THÔNG BAN HÀNH KÈM THEO THÔNG TƯ SỐ 15/2020/TT-BGDĐT NGÀY 26 THÁNG 5 NĂM 2020 ĐƯỢC SỬA ĐỔI, BỔ SUNG BỞI THÔNG TƯ SỐ 05/2021/TT-BGDĐT NGÀY 12 THÁNG 3 NĂM 2021 CỦA BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO",
+   "predicted": [
+    {
+     "id": "17095",
+     "title": "1919/BGDĐT-GDĐH | BỘ GIÁO DỤC VÀ ĐÀO TẠO"
+    },
+    {
+     "id": "279981",
+     "title": "Thong tu 15 2020 TT BGDDT Quy che thi tot nghiep trung hoc pho thong 444173 | 15/2020/TT-BGDĐT | THÔNG TƯ BAN HÀNH QUY CHẾ THI TỐT NGHIỆP TRUNG HỌC PHỔ THÔNG"
+    },
+    {
+     "id": "289353",
+     "title": "Quyet dinh 1160 QD BGDDT 2023 cong bo thu tuc hanh chinh linh vuc tuyen sinh thuoc Bo Giao duc 56503 | 1160/QĐ-BGDĐT | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH ĐƯỢC SỬA ĐỔI, BỔ SUNG LĨNH VỰC THI, TUYỂN SINH THUỘC PHẠM VI, CHỨC NĂNG QUẢN LÝ CỦA BỘ GIÁO DỤC VÀ ĐÀO TẠO BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO"
+    },
+    {
+     "id": "296613",
+     "title": "Quyet dinh 1584 QD BGDDT 2021 cong bo thu tuc hanh chinh linh vuc thi tuyen sinh 474938 | 1584/QĐ-BGDĐT | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH ĐƯỢC THAY THẾ LĨNH VỰC THI, TUYỂN SINH THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ GIÁO DỤC VÀ ĐÀO TẠO BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO"
+    },
+    {
+     "id": "65154",
+     "title": "2223/SGDĐT-KTKĐ | ỦY BAN NHÂN DÂN THÀNH PHỐ HỒ CHÍ MINH SỞ GIÁO DỤC VÀ ĐÀO TẠO"
+    }
+   ]
+  },
+  {
+   "question_id": "71464",
+   "question": "Căn cứ đánh giá chất lượng dịch vụ sự nghiệp công đối với tiêu chí về Thái độ phục vụ gồm những nội dung nào?",
+   "gold": "86481",
+   "gold_count": 1,
+   "candidate_rank": 1,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 27 2017 TT BTNMT danh gia chat luong dich vu su nghiep cong canh bao khi tuong thuy van 330 | 27/2017/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG VỀ CUNG CẤP BẢN TIN DỰ BÁO, CẢNH BÁO KHÍ TƯỢNG THỦY VĂN",
+   "predicted": [
+    {
+     "id": "295999",
+     "title": "Thong tu 16 2018 TT BTNMT chi so danh gia chat luong xay dung tieu chuan quoc gia 403504 | 16/2018/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG XÂY DỰNG TIÊU CHUẨN QUỐC GIA, QUY CHUẨN KỸ THUẬT QUỐC GIA THUỘC TRÁCH NHIỆM CỦA BỘ TÀI NGUYÊN VÀ MÔI TRƯỜNG"
+    },
+    {
+     "id": "11102",
+     "title": "Thong tu 28 2017 TT BTNMT chat luong dich vu su nghiep cong quan trac tai nguyen moi truong 323541 | 28/2017/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG VỀ QUAN TRẮC TÀI NGUYÊN VÀ MÔI TRƯỜNG"
+    },
+    {
+     "id": "23896",
+     "title": "Thong tu 18 2019 TT BTNMT chi so danh gia chat luong dich vu su nghiep cong dieu chinh gia dat 42724 | 18/2019/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG SỬ DỤNG NGÂN SÁCH NHÀ NƯỚC VỀ ĐIỀU TRA, THU THẬP THÔNG TIN XÂY DỰNG, ĐIỀU CHỈNH KHUNG GIÁ CÁC LOẠI ĐẤT"
+    },
+    {
+     "id": "292602",
+     "title": "Thong tu 67 2017 TT BTNMT chi so danh gia dich vu su nghiep cong dieu tra dieu kien tu nhien 372989 | 67/2017/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG ĐIỀU TRA CƠ BẢN CÁC ĐIỀU KIỆN TỰ NHIÊN, TÀI NGUYÊN THIÊN NHIÊN, MÔI TRƯỜNG"
+    },
+    {
+     "id": "305788",
+     "title": "Thong tu 19 2018 TT BTNMT danh gia dich vu cong ve van hanh ho chua tren luu vuc song lien tinh 4031 | 19/2018/TT-BTNMT | THÔNG TƯ QUY ĐỊNH TIÊU CHÍ, CHỈ SỐ ĐÁNH GIÁ CHẤT LƯỢNG DỊCH VỤ SỰ NGHIỆP CÔNG VỀ LẬP, ĐIỀU CHỈNH QUY TRÌNH VẬN HÀNH LIÊN HỒ CHỨA TRÊN LƯU VỰC SÔNG LIÊN TỈNH"
+    }
+   ]
+  },
+  {
+   "question_id": "68152",
+   "question": "Thời gian thực hiện thủ tục đính chính Giấy chứng nhận khi đổi Căn cước công dân được quy định như thế nào?",
+   "gold": "113741",
+   "gold_count": 1,
+   "candidate_rank": 30,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 9,
+   "gold_title": "Nghi dinh 43 2014 ND CP huong dan thi hanh Luat Dat dai 230680 | 43/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI",
+   "predicted": [
+    {
+     "id": "163224",
+     "title": "Luat Can cuoc cong dan 2014 259782 | QUỐC HỘI"
+    },
+    {
+     "id": "107674",
+     "title": "Thong tu 24 2014 TT BTNMT ho so dia chinh 236560 | 24/2014/TT-BTNMT | BỘ TÀI NGUYÊN VÀ MÔI TRƯỜNG"
+    },
+    {
+     "id": "257129",
+     "title": "Nghi dinh 01 2017 ND CP sua doi nghi dinh huong dan Luat dat dai 337031 | 01/2017/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT ĐẤT ĐAI"
+    },
+    {
+     "id": "303955",
+     "title": "Quyet dinh 108 QD LDTBXH 2022 cong bo thu tuc hanh chinh linh vuc nguoi co cong 509219 | 108/QĐ-BLĐTBXH | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH MỚI BAN HÀNH, THỦ TỤC HÀNH CHÍNH BÃI BỎ VỀ LĨNH VỰC NGƯỜI CÓ CÔNG THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ NHÀ NƯỚC CỦA BỘ LAO ĐỘNG - THƯƠNG BINH VÀ XÃ HỘI BỘ TRƯỞNG BỘ LAO ĐỘNG - THƯƠNG BINH VÀ XÃ HỘI"
+    },
+    {
+     "id": "225173",
+     "title": "Quyet dinh 1329 QD BTP 2020 cong bo thu tuc hanh chinh linh vuc chung thuc Bo Tu phap 444658 | 1329/QĐ-BTP | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH SỬA ĐỔI, BỔ SUNG TRONG LĨNH VỰC CHỨNG THỰC THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ TƯ PHÁP BỘ TRƯỞNG BỘ TƯ PHÁP"
+    }
+   ]
+  },
+  {
+   "question_id": "25360",
+   "question": "Người dân tự ý xây dựng nhà ở trên đất nông nghiệp của Ủy ban chưa thực hiện giao đất thì bị xử phạt hành chính như thế nào?",
+   "gold": "208314",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 3,
+   "gold_title": "Nghi dinh 166 2013 ND CP cuong che thi hanh quyet dinh xu phat vi pham hanh chinh 213687 | 166/2013/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ CƯỠNG CHẾ THI HÀNH QUYẾT ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH",
+   "predicted": [
+    {
+     "id": "281247",
+     "title": "Nghi dinh 16 2022 ND CP quy dinh xu phat vi pham hanh chinh ve xay dung 502065 | 16/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH VỀ XÂY DỰNG"
+    },
+    {
+     "id": "94754",
+     "title": "Nghi dinh 91 2019 ND CP xu phat vi pham hanh chinh trong linh vuc dat dai 379364 | 91/2019/NĐ-CP | NGHỊ ĐỊNH VỀ XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC ĐẤT ĐAI"
+    },
+    {
+     "id": "48223",
+     "title": "Nghi dinh 63 2019 ND CP xu phat vi pham hanh chinh trong linh vuc quan ly su dung tai san cong 41863 | 63/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC QUẢN LÝ, SỬ DỤNG TÀI SẢN CÔNG; THỰC HÀNH TIẾT KIỆM, CHỐNG LÃNG PHÍ; DỰ TRỮ QUỐC GIA; KHO BẠC NHÀ NƯỚC"
+    },
+    {
+     "id": "6411",
+     "title": "Luat Nha o 2014 259721 | QUỐC HỘI"
+    },
+    {
+     "id": "208373",
+     "title": "Nghi dinh 03 2022 ND CP xu phat vi pham hanh chinh linh vuc phong chong thien tai 500041 | 03/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC PHÒNG, CHỐNG THIÊN TAI; THỦY LỢI; ĐÊ ĐIỀU"
+    }
+   ]
+  },
+  {
+   "question_id": "115886",
+   "question": "Yêu cầu ghi vào Sổ hộ tịch việc ly hôn thực hiện ở nước ngoài bằng những hình thức nào?",
+   "gold": "189230",
+   "gold_count": 1,
+   "candidate_rank": 14,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 4,
+   "gold_title": "Quyet dinh 2228 QD BTP 2022 cong bo thu tuc hanh chinh linh vuc ho tich tai co quan dang ky ho tich | 2228/QĐ-BTP | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH MỚI BAN HÀNH; THỦ TỤC HÀNH CHÍNH ĐƯỢC SỬA ĐỔI, BỔ SUNG TRONG LĨNH VỰC HỘ TỊCH THỰC HIỆN TẠI CƠ QUAN ĐĂNG KÝ HỘ TỊCH THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ TƯ PHÁP BỘ TRƯỞNG BỘ TƯ PHÁP",
+   "predicted": [
+    {
+     "id": "270799",
+     "title": "Nghi dinh 126 2014 ND CP quy dinh chi tiet mot so dieu bien phap thi hanh Luat Hon nhan gia dinh 262 | 126/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT HÔN NHÂN VÀ GIA ĐÌNH"
+    },
+    {
+     "id": "60283",
+     "title": "Nghi dinh 123 2015 ND CP huong dan Luat ho tich 282304 | 123/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT HỘ TỊCH"
+    },
+    {
+     "id": "249204",
+     "title": "Thong tu 04 2020 TT BTP huong dan Luat ho tich va Nghi dinh 123 2015 ND CP ve ho tich 446237 | 04/2020/TT-BTP | THÔNG TƯ QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT HỘ TỊCH VÀ NGHỊ ĐỊNH SỐ 123/2015/NĐ-CP NGÀY 15 THÁNG 11 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT HỘ TỊCH"
+    },
+    {
+     "id": "157168",
+     "title": "Luat Ho tich 2014 259727 | QUỐC HỘI"
+    },
+    {
+     "id": "220347",
+     "title": "Quyet dinh 299 QD BTP thu tuc hanh chinh ban hanh moi Ho tich co quan dang ky ho tich trong nuoc 201 | 299/QĐ-BTP | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH BAN HÀNH MỚI TRONG LĨNH VỰC HỘ TỊCH THỰC HIỆN TẠI CƠ QUAN ĐĂNG KÝ HỘ TỊCH TRONG NƯỚC THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ TƯ PHÁP BỘ TRƯỞNG BỘ TƯ PHÁP"
+    }
+   ]
+  },
+  {
+   "question_id": "12774",
+   "question": "Cá nhân được bổ nhiệm làm Thanh tra viên chính ngành khoa học và công nghệ cần đáp ứng những yêu cầu nào?",
+   "gold": "193936",
+   "gold_count": 3,
+   "candidate_rank": 90,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 4,
+   "gold_title": "Luat thanh tra 2010 115311 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "8576",
+     "title": "Thong tu 24 2015 TT BKHCN cong chuc thanh tra cong tac vien thanh tra nganh khoa hoc cong nghe 29804 | 24/2015/TT-BKHCN | THÔNG TƯ QUY ĐỊNH VỀ THANH TRA VIÊN, CÔNG CHỨC THANH TRA CHUYÊN NGÀNH VÀ CỘNG TÁC VIÊN THANH TRA NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "36873",
+     "title": "43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "71884",
+     "title": "Quyet dinh 483 QD BKHCN thanh lap Quy che to chuc hoat dong 111341 | 483/QĐ-BKHCN | QUYẾT ĐỊNH VỀ VIỆC THÀNH LẬP VÀ BAN HÀNH QUY CHẾ TỔ CHỨC VÀ HOẠT ĐỘNG CỦA THANH TRA CỤC KIỂM SOÁT VÀ AN TOÀN BỨC XẠ, HẠT NHÂN BỘ TRƯỞNG BỘ KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "236481",
+     "title": "Nghi dinh 97 2011 ND CP thanh tra vien va cong tac vien thanh tra 130813 | 97/2011/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THANH TRA VIÊN VÀ CỘNG TÁC VIÊN THANH TRA CHÍNH PHỦ"
+    }
+   ]
+  },
+  {
+   "question_id": "7390",
+   "question": "Kiểm tra viên cao cấp có những nhiệm vụ gì?",
+   "gold": "163084",
+   "gold_count": 1,
+   "candidate_rank": 8,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 5,
+   "gold_title": "Luat To chuc Vien kiem sat nhan dan 2014 259723 | LUẬT TỔ CHỨC VIỆN KIỂM SÁT NHÂN DÂN",
+   "predicted": [
+    {
+     "id": "285576",
+     "title": "Quyet dinh 73 2005 QD BNV chuc danh tieu chuan nghiep vu ma so ngach Kiem tra vien nganh Kiem sat 24 | 73/2005/QĐ-BNV | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH CHỨC DANH, TIÊU CHUẨN NGHIỆP VỤ VÀ MÃ SỐ CÁC NGẠCH KIỂM TRA VIÊN NGÀNH KIỂM SÁT BỘ TRƯỞNG BỘ NỘI VỤ"
+    },
+    {
+     "id": "222043",
+     "title": "Thong tu 77 2019 TT BTC tieu chuan chuyen mon nghiep vu xep luong doi voi cong chuc ke toan 428573 | 77/2019/TT-BTC | THÔNG TƯ QUY ĐỊNH MÃ SỐ, TIÊU CHUẨN CHUYÊN MÔN, NGHIỆP VỤ VÀ XẾP LƯƠNG ĐỐI VỚI CÁC NGẠCH CÔNG CHỨC CHUYÊN NGÀNH KẾ TOÁN, THUẾ, HẢI QUAN, DỰ TRỮ"
+    },
+    {
+     "id": "396",
+     "title": "Nghi quyet 924 2015 UBTVQH13 bo nhiem dieu kien nang ngach Kiem tra vien cua Vien kiem sat nhan dan | NGHỊ QUYẾT VỀ TIÊU CHUẨN BỔ NHIỆM, ĐIỀU KIỆN NÂNG NGẠCH KIỂM TRA VIÊN CỦA VIỆN KIỂM SÁT NHÂN DÂN ỦY BAN THƯỜNG VỤ QUỐC HỘI NƯỚC"
+    },
+    {
+     "id": "224034",
+     "title": "Quyet dinh 505 QD UBKTTW 2022 chuc danh va bo nhiem ngach Kiem tra Dang 510952 | 505-QĐ/UBKTTW | QUYẾT ĐỊNH BAN HÀNH QUY ĐỊNH TIÊU CHUẨN, CHỨC DANH VÀ BỔ NHIỆM NGẠCH KIỂM TRA ĐẢNG"
+    },
+    {
+     "id": "162150",
+     "title": "Thong tu 29 2022 TT BTC tieu chuan chuyen mon ngach cong chuc ke toan thue hai quan du tru 517146 | 29/2022/TT-BTC | THÔNG TƯ QUY ĐỊNH MÃ SỐ, TIÊU CHUẨN CHUYÊN MÔN, NGHIỆP VỤ VÀ XẾP LƯƠNG ĐỐI VỚI CÁC NGẠCH CÔNG CHỨC CHUYÊN NGÀNH KẾ TOÁN, THUẾ, HẢI QUAN, DỰ TRỮ"
+    }
+   ]
+  },
+  {
+   "question_id": "100298",
+   "question": "Giá bán xăng dầu sau khi thực hiện quỹ bình ổn giá xăng, dầu như thế nào?",
+   "gold": "268645",
+   "gold_count": 1,
+   "candidate_rank": 11,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "2078/BCT-TTTN | BỘ CÔNG THƯƠNG",
+   "predicted": [
+    {
+     "id": "270862",
+     "title": "7376/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "198845",
+     "title": "5621/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "185771",
+     "title": "8243/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "262587",
+     "title": "3942/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "151206",
+     "title": "Thong tu 103 2021 TT BTC huong dan phuong thuc trich lap Quy binh on gia xang dau 495500 | 103/2021/TT-BTC | THÔNG TƯ HƯỚNG DẪN PHƯƠNG THỨC TRÍCH LẬP, CHI SỬ DỤNG, QUẢN LÝ QUỸ BÌNH ỔN GIÁ XĂNG DẦU"
+    }
+   ]
+  },
+  {
+   "question_id": "134012",
+   "question": "Phạt nguội là gì?",
+   "gold": "193708",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 9,
+   "gold_title": "Thong tu 65 2020 TT BCA quy trinh tuan tra xu ly vi pham hanh chinh ve giao thong duong bo 427300 | 65/2020/TT-BCA | THÔNG TƯ QUY ĐỊNH NHIỆM VỤ, QUYỀN HẠN, HÌNH THỨC, NỘI DUNG VÀ QUY TRÌNH TUẦN TRA, KIỂM SOÁT, XỬ LÝ VI PHẠM HÀNH CHÍNH VỀ GIAO THÔNG ĐƯỜNG BỘ CỦA CẢNH SÁT GIAO THÔNG",
+   "predicted": [
+    {
+     "id": "245154",
+     "title": "Bo luat hinh su 2015 296661 | 100/2015/QH13 | QUỐC HỘI"
+    },
+    {
+     "id": "98892",
+     "title": "Nghi dinh 144 2021 ND CP xu phat vi pham hanh chinh linh vuc an ninh an toan xa hoi 425471 | 144/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC AN NINH, TRẬT TỰ, AN TOÀN XÃ HỘI; PHÒNG, CHỐNG TỆ NẠN XÃ HỘI; PHÒNG CHÁY, CHỮA CHÁY; CỨU NẠN, CỨU HỘ; PHÒNG, CHỐNG BẠO LỰC GIA ĐÌNH"
+    },
+    {
+     "id": "17545",
+     "title": "Luat xu ly vi pham hanh chinh 2012 142766 | LUẬT XỬ LÝ VI PHẠM HÀNH CHÍNH"
+    },
+    {
+     "id": "65293",
+     "title": "Nghi dinh 15 2020 ND CP xu phat vi pham hanh chinh linh vuc buu chinh vien thong tan so vo tuyen die | 15/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC BƯU CHÍNH, VIỄN THÔNG, TẦN SỐ VÔ TUYẾN ĐIỆN, CÔNG NGHỆ THÔNG TIN VÀ GIAO DỊCH ĐIỆN TỬ"
+    },
+    {
+     "id": "81598",
+     "title": "Bo luat dan su 2015 296215 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "141924",
+   "question": "Làm mất tài liệu công nghệ do Nhà nước giao để phục vụ cho động viên công nghiệp, doanh nghiệp công nghiệp bị xử phạt như thế nào?",
+   "gold": "165881",
+   "gold_count": 2,
+   "candidate_rank": 42,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 2,
+   "gold_title": "Phap lenh dong vien cong nghiep 2003 09 2003 PL UBTVQH11 50565 | 09/2003/PL-UBTVQH11 | PHÁP LỆNH CỦA UỶ BAN THƯỜNG VỤ QUỐC HỘI SỐ 09/2003/PL-UBTVQH11 NGÀY 25 THÁNG 02 NĂM 2003 VỀ ĐỘNG VIÊN CÔNG NGHIỆP",
+   "predicted": [
+    {
+     "id": "122159",
+     "title": "Nghi dinh 120 2013 ND CP xu phat vi pham hanh chinh quoc phong co yeu 209606 | 120/2013/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC QUỐC PHÒNG, CƠ YẾU"
+    },
+    {
+     "id": "98892",
+     "title": "Nghi dinh 144 2021 ND CP xu phat vi pham hanh chinh linh vuc an ninh an toan xa hoi 425471 | 144/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC AN NINH, TRẬT TỰ, AN TOÀN XÃ HỘI; PHÒNG, CHỐNG TỆ NẠN XÃ HỘI; PHÒNG CHÁY, CHỮA CHÁY; CỨU NẠN, CỨU HỘ; PHÒNG, CHỐNG BẠO LỰC GIA ĐÌNH"
+    },
+    {
+     "id": "152966",
+     "title": "Nghi dinh 99 2013 ND CP xu phat vi pham hanh chinh so huu cong nghiep 205677 | 99/2013/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC SỞ HỮU CÔNG NGHIỆP"
+    },
+    {
+     "id": "245154",
+     "title": "Bo luat hinh su 2015 296661 | 100/2015/QH13 | QUỐC HỘI"
+    },
+    {
+     "id": "48223",
+     "title": "Nghi dinh 63 2019 ND CP xu phat vi pham hanh chinh trong linh vuc quan ly su dung tai san cong 41863 | 63/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC QUẢN LÝ, SỬ DỤNG TÀI SẢN CÔNG; THỰC HÀNH TIẾT KIỆM, CHỐNG LÃNG PHÍ; DỰ TRỮ QUỐC GIA; KHO BẠC NHÀ NƯỚC"
+    }
+   ]
+  },
+  {
+   "question_id": "39328",
+   "question": "Mức đóng bảo hiểm y tế đối với con nuôi của người đang làm công tác cơ yếu là bao nhiêu?",
+   "gold": "211473",
+   "gold_count": 1,
+   "candidate_rank": 7,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Thong tu 143 2020 TT BQP huong dan Nghi dinh 146 2018 ND CP bao hiem y te thuoc Bo Quoc phong 459678 | 143/2020/TT-BQP | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 146/2018/NĐ-CP NGÀY 17 THÁNG 10 NĂM 2018 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ ĐỐI VỚI CÁC ĐỐI TƯỢNG THUỘC PHẠM VI QUẢN LÝ CỦA BỘ QUỐC PHÒNG",
+   "predicted": [
+    {
+     "id": "40539",
+     "title": "Nghi dinh 146 2018 ND CP huong dan Luat bao hiem y te 357505 | 146/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ"
+    },
+    {
+     "id": "243812",
+     "title": "Luat bao hiem y te 2008 25 2008 QH12 82196 | QUỐC HỘI"
+    },
+    {
+     "id": "78219",
+     "title": "Nghi dinh 70 2015 ND CP huong dan Luat Bao hiem y te Quan doi Cong an nhan dan nguoi lam co yeu 2888 | 70/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ ĐỐI VỚI QUÂN ĐỘI NHÂN DÂN, CÔNG AN NHÂN DÂN VÀ NGƯỜI LÀM CÔNG TÁC CƠ YẾU"
+    },
+    {
+     "id": "285041",
+     "title": "595/QĐ-BHXH | QUYẾT ĐỊNH BAN HÀNH QUY TRÌNH THU BẢO HIỂM XÃ HỘI, BẢO HIỂM Y TẾ, BẢO HIỂM THẤT NGHIỆP, BẢO HIỂM TAI NẠN LAO ĐỘNG - BỆNH NGHỀ NGHIỆP; QUẢN LÝ SỔ BẢO HIỂM XÃ HỘI, THẺ BẢO HIỂM Y TẾ TỔNG GIÁM ĐỐC BẢO HIỂM XÃ HỘI VIỆT NAM"
+    },
+    {
+     "id": "75474",
+     "title": "Thong tu 85 2016 TTLT BQP BYT BTC bao hiem y te quan nhan nguoi lam cong tac co yeu 318605 | 85/2016/TTLT-BQP-BYT-BTC | THÔNG TƯ LIÊN TỊCH HƯỚNG DẪN THỰC HIỆN BẢO HIỂM Y TẾ ĐỐI VỚI QUÂN NHÂN VÀ NGƯỜI LÀM CÔNG TÁC CƠ YẾU"
+    }
+   ]
+  },
+  {
+   "question_id": "27580",
+   "question": "Công tác chuẩn bị thi công cừ chống thấm trong công trình thủy lợi phải tuân thủ các yêu cầu kỹ thuật quy định gì?",
+   "gold": "63721",
+   "gold_count": 2,
+   "candidate_rank": 81,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 2,
+   "gold_title": "TIÊU CHUẨN QUỐC GIA TCVN 4055:2012 TỔ CHỨC THI CÔNG",
+   "predicted": [
+    {
+     "id": "209580",
+     "title": "L ± 3‰ L"
+    },
+    {
+     "id": "137218",
+     "title": "ĐT: (028) 3930 3279 DĐ: 0906 22 99 66 CHÚ DẪN:1"
+    },
+    {
+     "id": "37894",
+     "title": "Thong tu 51 2018 TT BLDTBXH yeu cau ve nang luc ma nguoi hoc phai dat duoc sau khi tot nghiep 422059 | 51/2018/TT-BLĐTBXH | THÔNG TƯ BAN HÀNH QUY ĐỊNH KHỐI LƯỢNG KIẾN THỨC TỐI THIỂU, YÊU CẦU VỀ NĂNG LỰC MÀ NGƯỜI HỌC ĐẠT ĐƯỢC SAU KHI TỐT NGHIỆP TRÌNH ĐỘ TRUNG CẤP, TRÌNH ĐỘ CAO ĐẲNG CÁC NGÀNH, NGHỀ THUỘC LĨNH VỰC SẢN XUẤT, CHẾ BIẾN VÀ XÂY DỰNG"
+    },
+    {
+     "id": "227688",
+     "title": "Thong tu 27 2022 TT BNNPTNT xay dung dinh muc kinh te ky thuat khai thac cong trinh thuy loi 551320 | 27/2022/TT-BNNPTNT | THÔNG TƯ HƯỚNG DẪN XÂY DỰNG ĐỊNH MỨC KINH TẾ - KỸ THUẬT TRONG QUẢN LÝ, KHAI THÁC CÔNG TRÌNH THỦY LỢI"
+    },
+    {
+     "id": "91097",
+     "title": "Nghi dinh 67 2018 ND CP huong dan Luat Thuy loi 356281 | 67/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT THỦY LỢI"
+    }
+   ]
+  },
+  {
+   "question_id": "101324",
+   "question": "Xét thăng hạng chức danh nghề nghiệp từ Lưu trữ viên trung cấp lên Lưu trữ viên cần đáp ứng những điều kiện gì? ",
+   "gold": "74494",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 17,
+   "gold_title": "Luat vien chuc 2010 115271 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "177884",
+     "title": "Thong tu 07 2022 TT BNV chuc danh ma so nghe nghiep xep luong vien chuc nganh luu tru 528554 | 07/2022/TT-BNV | THÔNG TƯ QUY ĐỊNH CHỨC DANH, MÃ SỐ, TIÊU CHUẨN CHỨC DANH NGHỀ NGHIỆP, THI HOẶC XÉT THĂNG HẠNG, BỔ NHIỆM VÀ XẾP LƯƠNG VIÊN CHỨC CHUYÊN NGÀNH LƯU TRỮ"
+    },
+    {
+     "id": "186226",
+     "title": "Quyet dinh 1696 QD BTCTW 2017 Quy che xet thang hang vien chuc 363366 | 1696-QĐ/BTCTW | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY CHẾ XÉT THĂNG HẠNG VIÊN CHỨC TRONG CƠ QUAN, ĐƠN VỊ SỰ NGHIỆP CỦA ĐẢNG, MẶT TRẬN TỔ QUỐC VÀ CÁC TỔ CHỨC CHÍNH TRỊ - XÃ HỘI"
+    },
+    {
+     "id": "199066",
+     "title": "Nghi dinh 115 2020 ND CP tuyen dung su dung quan ly vien chuc 453968 | 115/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TUYỂN DỤNG, SỬ DỤNG VÀ QUẢN LÝ VIÊN CHỨC"
+    },
+    {
+     "id": "275373",
+     "title": "Thong tu 6 2020 TT BNV Quy che to chuc thi tuyen xet tuyen cong chuc vien chuc 458640 | 6/2020/TT-BNV | THÔNG TƯ BAN HÀNH QUY CHẾ TỔ CHỨC THI TUYỂN, XÉT TUYỂN CÔNG CHỨC, VIÊN CHỨC, THI NÂNG NGẠCH CÔNG CHỨC, THI HOẶC XÉT THĂNG HẠNG CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC; NỘI QUY THI TUYỂN, XÉT TUYỂN CÔNG CHỨC, VIÊN CHỨC, THI NÂNG NGẠCH CÔNG CHỨC, THI HOẶC XÉT THĂNG HẠNG CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC"
+    },
+    {
+     "id": "278160",
+     "title": "Thong tu 12 2012 TT BNV chuc danh nghe nghiep va thay doi chuc danh nghe nghiep 163515 | 12/2012/TT-BNV | THÔNG TƯ QUY ĐỊNH VỀ CHỨC DANH NGHỀ NGHIỆP VÀ THAY ĐỔI CHỨC DANH NGHỀ NGHIỆP ĐỐI VỚI VIÊN CHỨC"
+    }
+   ]
+  },
+  {
+   "question_id": "68956",
+   "question": "Quy định về đối tượng bảo hiểm trách nhiệm dân sự với bên thứ ba?",
+   "gold": "294517",
+   "gold_count": 2,
+   "candidate_rank": 12,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "Nghi dinh 20 2022 ND CP sua doi Nghi dinh 119 2015 ND CP bao hiem dau tu xay dung 506124 | 20/2022/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2015/NĐ-CP NGÀY 13 THÁNG 11 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH BẢO HIỂM BẮT BUỘC TRONG HOẠT ĐỘNG ĐẦU TƯ XÂY DỰNG",
+   "predicted": [
+    {
+     "id": "148391",
+     "title": "Thong tu 329 2016 TT BTC huong dan 119 2015 ND CP bao hiem bat buoc trong dau tu xay dung 300483 | 329/2016/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2015/NĐ-CP NGÀY 13 THÁNG 11 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH BẢO HIỂM BẮT BUỘC TRONG HOẠT ĐỘNG ĐẦU TƯ XÂY DỰNG"
+    },
+    {
+     "id": "88970",
+     "title": "Thong tu 50 2022 TT BTC huong dan Nghi dinh 119 2015 ND CP bao hiem bat buoc trong dau tu 526434 | 50/2022/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2015/NĐ-CP NGÀY 13 THÁNG 11 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH BẢO HIỂM BẮT BUỘC TRONG HOẠT ĐỘNG ĐẦU TƯ XÂY DỰNG VÀ NGHỊ ĐỊNH SỐ 20/2022/NĐ-CP NGÀY 10 THÁNG 3 NĂM 2022 SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2015/NĐ-CP NGÀY"
+    },
+    {
+     "id": "178057",
+     "title": "Luat Kinh doanh bao hiem 2022 465916 | QUỐC HỘI"
+    },
+    {
+     "id": "91673",
+     "title": "Luat Kinh doanh bao hiem 2000 24 2000 QH10 47229 | 24/2000/QH10 | LUẬT CỦA QUỐC HỘI NƯỚC | SỐ 24/2000/QH10 NGÀY 09 THÁNG 12 NĂM 2000 VỀ KINH DOANH BẢO HIỂM"
+    },
+    {
+     "id": "238267",
+     "title": "Nghi dinh 03 2021 ND CP bao hiem bat buoc trach nhiem dan su cua chu xe co gioi 401513 | 03/2021/NĐ-CP | NGHỊ ĐỊNH VỀ BẢO HIỂM BẮT BUỘC TRÁCH NHIỆM DÂN SỰ CỦA CHỦ XE CƠ GIỚI"
+    }
+   ]
+  },
+  {
+   "question_id": "159014",
+   "question": "Kết luận thanh tra chuyên ngành nông nghiệp và phát triển nông thôn gồm những nội dung gì?",
+   "gold": "89955",
+   "gold_count": 3,
+   "candidate_rank": 34,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 05 2014 TT TTCP to chuc hoat dong quan he cong tac Doan thanh tra trinh tu thu tuc cuoc tha | 05/2014/TT-TTCP | THÔNG TƯ QUY ĐỊNH VỀ TỔ CHỨC, HOẠT ĐỘNG, QUAN HỆ CÔNG TÁC CỦA ĐOÀN THANH TRA VÀ TRÌNH TỰ, THỦ TỤC TIẾN HÀNH MỘT CUỘC THANH TRA",
+   "predicted": [
+    {
+     "id": "248341",
+     "title": "Thong tu 33 2016 TT BNNPTNT trinh tu thu tuc tien hanh thanh tra chuyen nganh nong nghiep 328601 | 33/2016/TT-BNNPTNT | THÔNG TƯ QUY ĐỊNH VỀ TRÌNH TỰ, THỦ TỤC TIẾN HÀNH MỘT CUỘC THANH TRA CHUYÊN NGÀNH VÀ TRANG PHỤC, THẺ CÔNG CHỨC THANH TRA CHUYÊN NGÀNH NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "171497",
+     "title": "Nghi dinh 47 2015 ND CP to chuc hoat dong thanh tra nganh Nong nghiep va Phat trien nong thon 274019 | 47/2015/NĐ-CP | NGHỊ ĐỊNH VỀ TỔ CHỨC VÀ HOẠT ĐỘNG THANH TRA NGÀNH NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "219889",
+     "title": "Quyet dinh 626 QD BNN TCCB 2014 co cau to chuc Thanh tra Bo Nong nghiep Phat trien nong thon 267201 | 626/QĐ-BNN-TCCB | QUYẾT ĐỊNH QUY ĐỊNH CHỨC NĂNG, NHIỆM VỤ, QUYỀN HẠN VÀ CƠ CẤU TỔ CHỨC CỦA THANH TRA BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN BỘ TRƯỞNG BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "227748",
+     "title": "Nghi dinh 33 2015 ND CP thuc hien ket luan thanh tra 269681 | 33/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VIỆC THỰC HIỆN KẾT LUẬN THANH TRA"
+    },
+    {
+     "id": "72305",
+     "title": "Luat Thanh tra 2022 544688 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "159014",
+   "question": "Kết luận thanh tra chuyên ngành nông nghiệp và phát triển nông thôn gồm những nội dung gì?",
+   "gold": "195962",
+   "gold_count": 3,
+   "candidate_rank": 3,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 2,
+   "gold_title": "Nghi dinh 07 2012 ND CP co quan duoc giao thuc hien chuc nang thanh tra 134598 | 07/2012/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ CƠ QUAN ĐƯỢC GIAO THỰC HIỆN CHỨC NĂNG THANH TRA CHUYÊN NGÀNH VÀ HOẠT ĐỘNG THANH TRA CHUYÊN NGÀNH CHÍNH PHỦ",
+   "predicted": [
+    {
+     "id": "248341",
+     "title": "Thong tu 33 2016 TT BNNPTNT trinh tu thu tuc tien hanh thanh tra chuyen nganh nong nghiep 328601 | 33/2016/TT-BNNPTNT | THÔNG TƯ QUY ĐỊNH VỀ TRÌNH TỰ, THỦ TỤC TIẾN HÀNH MỘT CUỘC THANH TRA CHUYÊN NGÀNH VÀ TRANG PHỤC, THẺ CÔNG CHỨC THANH TRA CHUYÊN NGÀNH NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "171497",
+     "title": "Nghi dinh 47 2015 ND CP to chuc hoat dong thanh tra nganh Nong nghiep va Phat trien nong thon 274019 | 47/2015/NĐ-CP | NGHỊ ĐỊNH VỀ TỔ CHỨC VÀ HOẠT ĐỘNG THANH TRA NGÀNH NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "219889",
+     "title": "Quyet dinh 626 QD BNN TCCB 2014 co cau to chuc Thanh tra Bo Nong nghiep Phat trien nong thon 267201 | 626/QĐ-BNN-TCCB | QUYẾT ĐỊNH QUY ĐỊNH CHỨC NĂNG, NHIỆM VỤ, QUYỀN HẠN VÀ CƠ CẤU TỔ CHỨC CỦA THANH TRA BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN BỘ TRƯỞNG BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "227748",
+     "title": "Nghi dinh 33 2015 ND CP thuc hien ket luan thanh tra 269681 | 33/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VIỆC THỰC HIỆN KẾT LUẬN THANH TRA"
+    },
+    {
+     "id": "72305",
+     "title": "Luat Thanh tra 2022 544688 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "33514",
+   "question": "Có yêu cầu bắt buộc trình độ đại học đối với người hành nghề dịch vụ giám định công nghệ hạt nhân?",
+   "gold": "69",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "TIÊU CHUẨN QUỐC GIA TCVN ISO/IEC 17020:2012 ISO/IEC 17020:2012 ĐÁNH GIÁ SỰ PHÙ HỢP - YÊU CẦU ĐỐI VỚI HOẠT ĐỘNG CỦA TỔ CHỨC TIẾN HÀNH GIÁM ĐỊNH",
+   "predicted": [
+    {
+     "id": "249287",
+     "title": "Nghi dinh 142 2020 ND CP tien hanh hoat dong dich vu ho tro ung dung nang luong nguyen tu 459070 | 142/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ VIỆC TIẾN HÀNH CÔNG VIỆC BỨC XẠ VÀ HOẠT ĐỘNG DỊCH VỤ HỖ TRỢ ỨNG DỤNG NĂNG LƯỢNG NGUYÊN TỬ"
+    },
+    {
+     "id": "163422",
+     "title": "Quyet dinh so 546 QD BKHCN 2022 cong bo thu tuc hanh chinh linh vuc nang luong nguyen tu 521007 | 546/QĐ-BKHCN | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ THỦ TỤC HÀNH CHÍNH SỬA ĐỔI, BỔ SUNG TRONG LĨNH VỰC NĂNG LƯỢNG NGUYÊN TỬ, AN TOÀN BỨC XẠ VÀ HẠT NHÂN THUỘC PHẠM VI CHỨC NĂNG QUẢN LÝ CỦA BỘ KHOA HỌC VÀ CÔNG NGHỆ BỘ TRƯỞNG BỘ KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "4319",
+     "title": "Thong tu 02 2022 TT BKHCN huong dan Nghi dinh 142 2020 ND CP 505021 | 02/2022/TT-BKHCN | THÔNG TƯ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 142/2020/NĐ-CP NGÀY 09 THÁNG 12 NĂM 2020 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ VIỆC TIẾN HÀNH CÔNG VIỆC BỨC XẠ VÀ HOẠT ĐỘNG DỊCH VỤ HỖ TRỢ ỨNG DỤNG NĂNG LƯỢNG NGUYÊN TỬ"
+    },
+    {
+     "id": "263632",
+     "title": "Nghi dinh 76 2018 ND CP huong dan Luat Chuyen giao cong nghe 380225 | 76/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT CHUYỂN GIAO CÔNG NGHỆ"
+    },
+    {
+     "id": "92970",
+     "title": "Luat nang luong nguyen tu 2008 18 2008 QH12 67115 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "96716",
+   "question": "Kinh phí thực hiện đề án tuyên truyền nhằm hoàn thành các chỉ tiêu phát triển đối tượng tham gia BHXH như thế nào?",
+   "gold": "25075",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Quyet dinh 1676 QD UBND 2022 cong bo thu tuc hanh chinh nguoi co cong So Lao dong Hai Duong 520645 | 1676/QĐ-UBND | QUYẾT ĐỊNH VỀ VIỆC CÔNG BỐ DANH MỤC THỦ TỤC HÀNH CHÍNH VÀ PHÊ DUYỆT QUY TRÌNH NỘI BỘ GIẢI QUYẾT THỦ TỤC HÀNH CHÍNH THUỘC PHẠM VI, CHỨC NĂNG QUẢN LÝ CỦA SỞ LAO ĐỘNG - THƯƠNG BINH VÀ XÃ HỘI CHỦ TỊCH ỦY BAN NHÂN DÂN TỈNH",
+   "predicted": [
+    {
+     "id": "251909",
+     "title": "Nghi quyet 102 NQ CP 2018 giao chi tieu phat trien doi tuong tham gia bao hiem xa hoi 389510 | 102/NQ-CP | NGHỊ QUYẾT VỀ VIỆC GIAO CHỈ TIÊU PHÁT TRIỂN ĐỐI TƯỢNG THAM GIA BẢO HIỂM XÃ HỘI CHÍNH PHỦ"
+    },
+    {
+     "id": "272628",
+     "title": "Nghi quyet 1971 NQ HDQL 2022 phien hop thuong ky quy I II 523228 | 1971/NQ-HĐQL | NGHỊ QUYẾT HỘI ĐỒNG QUẢN LÝ BẢO HIỂM XÃ HỘI PHIÊN HỌP THƯỜNG KỲ QUÝ I - II NĂM 2022 HỘI ĐỒNG QUẢN LÝ BẢO HIỂM XÃ HỘI"
+    },
+    {
+     "id": "245157",
+     "title": "Quyet dinh 583 QD TTg 2022 giao du toan thu chi bao hiem xa hoi bao hiem that nghiep 513152 | 583/QĐ-TTg | QUYẾT ĐỊNH VỀ VIỆC GIAO DỰ TOÁN THU, CHI BẢO HIỂM XÃ HỘI, BẢO HIỂM THẤT NGHIỆP, BẢO HIỂM Y TẾ VÀ CHI PHÍ QUẢN LÝ BẢO HIỂM XÃ HỘI, BẢO HIỂM THẤT NGHIỆP, BẢO HIỂM Y TẾ NĂM 2022 THỦ TƯỚNG CHÍNH PHỦ"
+    },
+    {
+     "id": "76973",
+     "title": "Quyet dinh 1079 QD TTg 2022 De an truyen thong ve quyen con nguoi o Viet Nam 529549 | 1079/QĐ-TTg | QUYẾT ĐỊNH PHÊ DUYỆT ĐỀ ÁN TRUYỀN THÔNG VỀ QUYỀN CON NGƯỜI Ở VIỆT NAM THỦ TƯỚNG CHÍNH PHỦ"
+    },
+    {
+     "id": "148880",
+     "title": "Nghi quyet 70 2022 QH15 phan bo ngan sach trung uong 2023 541863 | NGHỊ QUYẾT VỀ PHÂN BỔ NGÂN SÁCH TRUNG ƯƠNG NĂM 2023 QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "109110",
+   "question": "Nghị định hướng dẫn Luật Giáo dục nghề nghiệp hiện hành sẽ có thêm 1 nhóm đối tượng bị điều chỉnh từ năm 2022?",
+   "gold": "236560",
+   "gold_count": 2,
+   "candidate_rank": 5,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi dinh 24 2022 ND CP sua doi Nghi dinh dieu kien dau tu linh vuc giao duc nghe nghiep 509592 | 24/2022/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG CÁC NGHỊ ĐỊNH QUY ĐỊNH VỀ ĐIỀU KIỆN ĐẦU TƯ VÀ HOẠT ĐỘNG TRONG LĨNH VỰC GIÁO DỤC NGHỀ NGHIỆP",
+   "predicted": [
+    {
+     "id": "263528",
+     "title": "Nghi dinh 15 2019 ND CP huong dan Luat giao duc nghe nghiep 323393 | 15/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT GIÁO DỤC NGHỀ NGHIỆP"
+    },
+    {
+     "id": "221671",
+     "title": "Nghi dinh 88 2022 ND CP xu phat vi pham hanh chinh giao duc nghe nghiep 534876 | 88/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC GIÁO DỤC NGHỀ NGHIỆP"
+    },
+    {
+     "id": "66159",
+     "title": "Luat Giao duc nghe nghiep 2014 259733 | QUỐC HỘI"
+    },
+    {
+     "id": "285636",
+     "title": "Thong tu 17 2022 TT BLDTBXH giao duc nghe nghiep nguoi lao dong chuong trinh muc tieu quoc gia 53002 | 17/2022/TT-BLĐTBXH | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ NỘI DUNG VỀ GIÁO DỤC NGHỀ NGHIỆP VÀ GIẢI QUYẾT VIỆC LÀM CHO NGƯỜI LAO ĐỘNG TẠI CÁC TIỂU DỰ ÁN VÀ NỘI DUNG THÀNH PHẦN THUỘC 03 CHƯƠNG TRÌNH MỤC TIÊU QUỐC GIA GIAI ĐOẠN"
+    },
+    {
+     "id": "87680",
+     "title": "Nghi dinh 143 2016 ND CP dieu kien dau tu hoat dong trong linh vuc giao duc nghe nghiep 326965 | 143/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH ĐIỀU KIỆN ĐẦU TƯ VÀ HOẠT ĐỘNG TRONG LĨNH VỰC GIÁO DỤC NGHỀ NGHIỆP"
+    }
+   ]
+  },
+  {
+   "question_id": "16526",
+   "question": "Người lao động đang nghỉ chế độ thai sản thì có được gia hạn thẻ bảo hiểm y tế không?",
+   "gold": "71551",
+   "gold_count": 1,
+   "candidate_rank": 34,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 7,
+   "gold_title": "Nghi dinh 28 2015 ND CP huong dan Luat Viec lam va bao hiem that nghiep 268405 | 28/2015/NĐ-CP | II HỖ TRỢ ĐÀO TẠO, BỒI DƯỠNG, NÂNG CAO TRÌNH ĐỘ KỸ NĂNG NGHỀ ĐỂ DUY TRÌ VIỆC LÀM CHO NGƯỜI LAO ĐỘNG",
+   "predicted": [
+    {
+     "id": "285041",
+     "title": "595/QĐ-BHXH | QUYẾT ĐỊNH BAN HÀNH QUY TRÌNH THU BẢO HIỂM XÃ HỘI, BẢO HIỂM Y TẾ, BẢO HIỂM THẤT NGHIỆP, BẢO HIỂM TAI NẠN LAO ĐỘNG - BỆNH NGHỀ NGHIỆP; QUẢN LÝ SỔ BẢO HIỂM XÃ HỘI, THẺ BẢO HIỂM Y TẾ TỔNG GIÁM ĐỐC BẢO HIỂM XÃ HỘI VIỆT NAM"
+    },
+    {
+     "id": "243812",
+     "title": "Luat bao hiem y te 2008 25 2008 QH12 82196 | QUỐC HỘI"
+    },
+    {
+     "id": "40539",
+     "title": "Nghi dinh 146 2018 ND CP huong dan Luat bao hiem y te 357505 | 146/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ"
+    },
+    {
+     "id": "23402",
+     "title": "QUỐC HỘI"
+    },
+    {
+     "id": "227964",
+     "title": "Luat Bao hiem y te sua doi 2014 238506 | 46/2014/QH13 | LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT BẢO HIỂM Y TẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "90926",
+   "question": "Các trường hợp tinh giản biên chế cán bộ cấp huyện là các trường hợp nào?",
+   "gold": "23402",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 57,
+   "gold_title": "QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "71728",
+     "title": "Nghi dinh 108 2014 ND CP chinh sach tinh gian bien che 258044 | 108/2014/NĐ-CP | NGHỊ ĐỊNH VỀ CHÍNH SÁCH TINH GIẢN BIÊN CHẾ"
+    },
+    {
+     "id": "242348",
+     "title": "Nghi dinh 29 2023 ND CP tinh gian bien che 558755 | 29/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TINH GIẢN BIÊN CHẾ"
+    },
+    {
+     "id": "245887",
+     "title": "29/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ TINH GIẢN BIÊN CHẾ"
+    },
+    {
+     "id": "28683",
+     "title": "Nghi dinh 113 2018 ND CP sua doi Nghi dinh 108 2014 ND CP ve chinh sach tinh gian bien che 393041 | 113/2018/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 108/2014/NĐ-CP NGÀY 20 THÁNG 11 NĂM 2014 CỦA CHÍNH PHỦ VỀ CHÍNH SÁCH TINH GIẢN BIÊN CHẾ"
+    },
+    {
+     "id": "167382",
+     "title": "Nghi dinh 143 2020 ND CP sua doi Nghi dinh 108 2014 ND CP chinh sach tinh gian bien che 445165 | 143/2020/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘI SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 108/2014/NĐ-CP NGÀY 20 THÁNG 11 NĂM 2014 CỦA CHÍNH PHỦ VỀ CHÍNH SÁCH TINH GIẢN BIÊN CHẾ VÀ NGHỊ ĐỊNH SỐ 113/2018/NĐ-CP NGÀY 31 THÁNG 8 NĂM 2018 CỦA CHÍNH PHỦ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 108/2014/NĐ-CP NGÀY 20 THÁNG 11"
+    }
+   ]
+  },
+  {
+   "question_id": "134924",
+   "question": "Xử lý kết quả kiểm tra hồ sơ thuế tại cơ quan thuế như thế nào?",
+   "gold": "160381",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 10,
+   "gold_title": "Thong tu 80 2021 TT BTC huong dan Luat Quan ly thue Nghi dinh 126 2020 ND CP 466716 | 80/2021/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT QUẢN LÝ THUẾ VÀ NGHỊ ĐỊNH SỐ 126/2020/NĐ-CP NGÀY 19 THÁNG 10 NĂM 2020 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT QUẢN LÝ THUẾ",
+   "predicted": [
+    {
+     "id": "161949",
+     "title": "Luat quan ly thue 2019 387595 | QUỐC HỘI"
+    },
+    {
+     "id": "3551",
+     "title": "Quyet dinh 3394 QD TCHQ 2021 Quy trinh mien thue giam thue hoan thue hang hoa xuat khau 502268 | 3394/QĐ-TCHQ | QUYẾT ĐỊNH BAN HÀNH QUY TRÌNH MIỄN THUẾ, GIẢM THUẾ HOÀN THUẾ KHÔNG THU THUẾ, XỬ LÝ TIỀN THUẾ, TIỀN CHẬM NỘP, TIỀN PHẠT NỘP THỪA ĐỐI VỚI HÀNG HÓA XUẤT KHẨU, NHẬP KHẨU TỔNG CỤC TRƯỞNG TỔNG CỤC HẢI QUAN"
+    },
+    {
+     "id": "177389",
+     "title": "Thong tu 39 2018 TT BTC sua doi Thong tu 38 2015 TT BTC kiem tra giam sat hai quan 342345 | 39/2018/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU TẠI THÔNG TƯ SỐ 38/2015/TT-BTC NGÀY 25 THÁNG 3 NĂM 2015 CỦA BỘ TRƯỞNG BỘ TÀI CHÍNH QUY ĐỊNH VỀ THỦ TỤC HẢI QUAN; KIỂM TRA, GIÁM SÁT HẢI QUAN; THUẾ XUẤT KHẨU, THUẾ NHẬP KHẨU VÀ QUẢN LÝ THUẾ ĐỐI VỚI HÀNG HÓA XUẤT KHẨU, NHẬP KHẨU"
+    },
+    {
+     "id": "222640",
+     "title": "Thong tu 38 2015 TT BTC thu tuc hai quan thue xuat khau nhap khau quan ly thue hang xuat nhap khau 2 | 38/2015/TT-BTC | THÔNG TƯ QUY ĐỊNH VỀ THỦ TỤC HẢI QUAN; KIỂM TRA, GIÁM SÁT HẢI QUAN; THUẾ XUẤT KHẨU, THUẾ NHẬP KHẨU VÀ QUẢN LÝ THUẾ ĐỐI VỚI HÀNG HOÁ XUẤT KHẨU, NHẬP KHẨU."
+    },
+    {
+     "id": "133819",
+     "title": "Quyet dinh 679 QD TCT 2023 Quy trinh hoan thue 568320 | 679/QĐ-TCT | QUYẾT ĐỊNH BAN HÀNH QUY TRÌNH HOÀN THUẾ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "112448",
+   "question": "Phấn đấu đến năm 2023, GRDP bình quân đầu người đạt khoảng 14.500 USD?",
+   "gold": "128021",
+   "gold_count": 1,
+   "candidate_rank": 21,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi quyet 87 NQ CP 2023 thuc hien Nghi quyet 31 NQ TW phat trien Ho Chi Minh den 2030 568322 | 87/NQ-CP | NGHỊ QUYẾT BAN HÀNH CHƯƠNG TRÌNH HÀNH ĐỘNG CỦA CHÍNH PHỦ THỰC HIỆN NGHỊ QUYẾT SỐ 31-NQ/TW NGÀY 30 THÁNG 12 NĂM 2022 CỦA BỘ CHÍNH TRỊ VỀ PHƯƠNG HƯỚNG, NHIỆM VỤ PHÁT TRIỂN THÀNH PHỐ HỒ CHÍ MINH ĐẾN NĂM 2030, TẦM NHÌN ĐẾN NĂM 2045 CHÍNH PHỦ",
+   "predicted": [
+    {
+     "id": "256074",
+     "title": "Nghi quyet 152 NQ CP 2022 Chuong trinh hanh dong thuc hien Nghi quyet 23 NQ TW 538868 | 152/NQ-CP | NGHỊ QUYẾT BAN HÀNH CHƯƠNG TRÌNH HÀNH ĐỘNG CỦA CHÍNH PHỦ THỰC HIỆN NGHỊ QUYẾT SỐ 23-NQ/TW NGÀY 06 THÁNG 10 NĂM 2022 CỦA BỘ CHÍNH TRỊ VỀ PHƯƠNG HƯỚNG PHÁT TRIỂN KINH TẾ - XÃ HỘI VÀ BẢO ĐẢM QUỐC PHÒNG, AN NINH VÙNG TÂY NGUYÊN ĐẾN NĂM 2030, TẦM NHÌN ĐẾN NĂM 2045 CHÍNH PHỦ"
+    },
+    {
+     "id": "112700",
+     "title": "Nghi quyet 154 NQ CP 2022 thuc hien Nghi quyet 24 NQ TW phat trien kinh te vung Dong Nam Bo 540225 | 154/NQ-CP | NGHỊ QUYẾT BAN HÀNH CHƯƠNG TRÌNH HÀNH ĐỘNG CỦA CHÍNH PHỦ THỰC HIỆN NGHỊ QUYẾT SỐ 24-NQ/TW NGÀY 07 THÁNG 10 NĂM 2022 CỦA BỘ CHÍNH TRỊ VỀ PHÁT TRIỂN KINH TẾ - XÃ HỘI VÀ BẢO ĐẢM QUỐC PHÒNG, AN NINH VÙNG ĐÔNG NAM BỘ ĐẾN NĂM 2030, TẦM NHÌN ĐẾN NĂM 2045 CHÍNH PHỦ"
+    },
+    {
+     "id": "228350",
+     "title": "Nghi quyet 81 2023 QH15 Quy hoach tong the quoc gia thoi ky 2021 2030 551296 | NGHỊ QUYẾT VỀ QUY HOẠCH TỔNG THỂ QUỐC GIA THỜI KỲ 2021 - 2030, TẦM NHÌN ĐẾN NĂM 2050 QUỐC HỘI"
+    },
+    {
+     "id": "79407",
+     "title": "Nghi quyet 90 NQ CP 2023 thuc hien Nghi quyet 81 2023 QH15 Quy hoach tong the quoc gia 569867 | 90/NQ-CP | NGHỊ QUYẾT BAN HÀNH CHƯƠNG TRÌNH HÀNH ĐỘNG CỦA CHÍNH PHỦ THỰC HIỆN NGHỊ QUYẾT SỐ 81/2023/QH15 CỦA QUỐC HỘI VỀ QUY HOẠCH TỔNG THỂ QUỐC GIA THỜI KỲ 2021 - 2030, TẦM NHÌN ĐẾN NĂM 2050 VÀ KẾ HOẠCH THỰC HIỆN QUY HOẠCH TỔNG THỂ QUỐC GIA THỜI KỲ 2021 - 2030, TẦM NHÌN ĐẾN NĂM 2050 CHÍNH PHỦ"
+    },
+    {
+     "id": "10790",
+     "title": "Nghi quyet 31 NQ TW 2022 phuong huong nhiem vu phat trien Ho Chi Minh 548559 | 31-NQ/TW | NGHỊ QUYẾT CỦA BỘ CHÍNH TRỊ VỀ PHƯƠNG HƯỚNG, NHIỆM VỤ PHÁT TRIỂN THÀNH PHỐ HỒ CHÍ MINH ĐẾN NĂM 2030, TẦM NHÌN ĐẾN NĂM"
+    }
+   ]
+  },
+  {
+   "question_id": "29932",
+   "question": "Đất đai có thuộc quyền sở hữu toàn dân không?",
+   "gold": "266221",
+   "gold_count": 1,
+   "candidate_rank": 9,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi quyet 18 NQ TW 2022 hoan thien the che su dung dat tao dong luc phat trien thu nhap cao 518813 | 18-NQ/TW | NGHỊ QUYẾT HỘI NGHỊ LẦN THỨ NĂM BAN CHẤP HÀNH TRUNG ƯƠNG ĐẢNG KHÓA XIII VỀ “TIẾP TỤC ĐỔI MỚI, HOÀN THIỆN THỂ CHẾ, CHÍNH SÁCH, NÂNG CAO HIỆU LỰC, HIỆU QUẢ QUẢN LÝ VÀ SỬ DỤNG ĐẤT, TẠO ĐỘNG LỰC ĐƯA NƯỚC TA TRỞ THÀNH NƯỚC PHÁT TRIỂN CÓ THU NHẬP CAO” I-TÌNH HÌNH",
+   "predicted": [
+    {
+     "id": "305455",
+     "title": "Luat dat dai 2013 215836 | QUỐC HỘI"
+    },
+    {
+     "id": "81598",
+     "title": "Bo luat dan su 2015 296215 | QUỐC HỘI"
+    },
+    {
+     "id": "67945",
+     "title": "Luat Dat dai 2003 13 2003 QH11 51685 | 13/2003/QH11 | LUẬT SỐ13/2003/QH11 CỦA QUỐC HỘI NƯỚC | VỀ ĐẤT ĐAI"
+    },
+    {
+     "id": "213302",
+     "title": "Nghi dinh 29 2018 ND CP trinh tu thu tuc xac lap quyen so huu toan dan ve tai san 376892 | 29/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH TRÌNH TỰ, THỦ TỤC XÁC LẬP QUYỀN SỞ HỮU TOÀN DÂN VỀ TÀI SẢN VÀ XỬ LÝ ĐỐI VỚI TÀI SẢN ĐƯỢC XÁC LẬP QUYỀN SỞ HỮU TOÀN DÂN"
+    },
+    {
+     "id": "184038",
+     "title": "……/2023/QH15 DỰ THẢO QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "131802",
+   "question": "Các quy định về chính sách thuế, phí, lệ phí được ban hành năm 2022?",
+   "gold": "12180",
+   "gold_count": 1,
+   "candidate_rank": 47,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "1912/TCT-DT | A. VỀ ĐÁNH GIÁ TÌNH HÌNH THỰC HIỆN DỰ TOÁN THU NSNN NĂM 2022 VÀ XÂY DỰNG DỰ TOÁN THU NSNN NĂM",
+   "predicted": [
+    {
+     "id": "71679",
+     "title": "Thong tu 74 2022 TT BTC hinh thuc thoi han thu nop ke khai cac khoan phi le phi 547027 | 74/2022/TT-BTC | THÔNG TƯ QUY ĐỊNH VỀ HÌNH THỨC, THỜI HẠN THU, NỘP, KÊ KHAI CÁC KHOẢN PHÍ, LỆ PHÍ THUỘC THẨM QUYỀN QUY ĐỊNH CỦA BỘ TÀI CHÍNH"
+    },
+    {
+     "id": "9871",
+     "title": "Thong tu 13 2022 TT BTC huong dan Nghi dinh 10 2022 ND CP le phi truoc ba 496405 | 13/2022/TT-BTC | THÔNG TƯ QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 10/2022/NĐ-CP NGÀY 15 THÁNG 01 NĂM 2022 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ LỆ PHÍ TRƯỚC BẠ"
+    },
+    {
+     "id": "254787",
+     "title": "Nghi dinh 10 2022 ND CP quy dinh ve le phi truoc ba 484768 | 10/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ LỆ PHÍ TRƯỚC BẠ"
+    },
+    {
+     "id": "17754",
+     "title": "Luat phi va le phi 2015 298376 | QUỐC HỘI"
+    },
+    {
+     "id": "222279",
+     "title": "Thong tu 75 2022 TT BTC muc thu che do thu nop va quan ly le phi dang ky cu tru 547150 | 75/2022/TT-BTC | THÔNG TƯ QUY ĐỊNH MỨC THU, CHẾ ĐỘ THU, NỘP VÀ QUẢN LÝ LỆ PHÍ ĐĂNG KÝ CƯ TRÚ"
+    }
+   ]
+  },
+  {
+   "question_id": "50248",
+   "question": "Thuế giá trị gia tăng sản phẩm lưỡng tính vừa là sản phẩm trồng trọt vừa là nguyên liệu thức ăn truyền thống được quy định như thế nào?",
+   "gold": "125611",
+   "gold_count": 4,
+   "candidate_rank": 197,
+   "was_reranked": false,
+   "recall_mass": 0.25,
+   "training_questions_with_gold": 0,
+   "gold_title": "3041/TCT-CS | BỘ TÀI CHÍNH TỔNG CỤC THUẾ",
+   "predicted": [
+    {
+     "id": "280196",
+     "title": "2487/TCT-CS | BỘ TÀI CHÍNH TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "161768",
+     "title": "219/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH LUẬT THUẾ GIÁ TRỊ GIA TĂNG VÀ NGHỊ ĐỊNH SỐ 209/2013/NĐ-CP NGÀY 18/12/2013 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    },
+    {
+     "id": "84557",
+     "title": "Luat thue gia tri gia tang 2008 13 2008 QH12 66934 | LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    },
+    {
+     "id": "150183",
+     "title": "Thong tu 26 2015 TT BTC huong dan 12 2015 ND CP thue gia tri gia tang sua doi 39 2014 TT BTC 267174 | 26/2015/TT-BTC | THÔNG TƯ HƯỚNG DẪN VỀ THUẾ GIÁ TRỊ GIA TĂNG VÀ QUẢN LÝ THUẾ TẠI NGHỊ ĐỊNH SỐ 12/2015/NĐ-CP NGÀY 12 THÁNG 2 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC LUẬT VỀ THUẾ VÀ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH VỀ"
+    },
+    {
+     "id": "181088",
+     "title": "Nghi dinh 126 2020 ND CP huong dan Luat Quan ly thue 455733 | 126/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT QUẢN LÝ THUẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "50248",
+   "question": "Thuế giá trị gia tăng sản phẩm lưỡng tính vừa là sản phẩm trồng trọt vừa là nguyên liệu thức ăn truyền thống được quy định như thế nào?",
+   "gold": "267880",
+   "gold_count": 4,
+   "candidate_rank": 57,
+   "was_reranked": false,
+   "recall_mass": 0.25,
+   "training_questions_with_gold": 0,
+   "gold_title": "534/CN-TACN | BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN CỤC CHĂN NUÔI",
+   "predicted": [
+    {
+     "id": "280196",
+     "title": "2487/TCT-CS | BỘ TÀI CHÍNH TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "161768",
+     "title": "219/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH LUẬT THUẾ GIÁ TRỊ GIA TĂNG VÀ NGHỊ ĐỊNH SỐ 209/2013/NĐ-CP NGÀY 18/12/2013 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    },
+    {
+     "id": "84557",
+     "title": "Luat thue gia tri gia tang 2008 13 2008 QH12 66934 | LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    },
+    {
+     "id": "150183",
+     "title": "Thong tu 26 2015 TT BTC huong dan 12 2015 ND CP thue gia tri gia tang sua doi 39 2014 TT BTC 267174 | 26/2015/TT-BTC | THÔNG TƯ HƯỚNG DẪN VỀ THUẾ GIÁ TRỊ GIA TĂNG VÀ QUẢN LÝ THUẾ TẠI NGHỊ ĐỊNH SỐ 12/2015/NĐ-CP NGÀY 12 THÁNG 2 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC LUẬT VỀ THUẾ VÀ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH VỀ"
+    },
+    {
+     "id": "181088",
+     "title": "Nghi dinh 126 2020 ND CP huong dan Luat Quan ly thue 455733 | 126/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT QUẢN LÝ THUẾ"
+    }
+   ]
+  },
+  {
+   "question_id": "4062",
+   "question": "Nhà đầu tư nước ngoài phải làm gì để được góp vốn vào doanh nghiệp Việt Nam theo đúng quy định của Luật đầu tư?",
+   "gold": "153353",
+   "gold_count": 2,
+   "candidate_rank": 37,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "8909 | BỘ KẾ HOẠCH VÀ ĐẦU TƯ",
+   "predicted": [
+    {
+     "id": "84570",
+     "title": "Nghi dinh 31 2021 ND CP huong dan Luat Dau tu 462291 | 31/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẦU TƯ"
+    },
+    {
+     "id": "2113",
+     "title": "Luat Dau tu so 61 2020 QH14 321051 | QUỐC HỘI"
+    },
+    {
+     "id": "52555",
+     "title": "Nghi dinh 118 2015 ND CP huong dan Luat dau tu 281054 | 118/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẦU TƯ"
+    },
+    {
+     "id": "50279",
+     "title": "Thong tu 06 2019 TT NHNN quan ly ngoai hoi hoat dong dau tu truc tiep nuoc ngoai vao Viet Nam 419723 | 06/2019/TT-NHNN | THÔNG TƯ HƯỚNG DẪN VỀ QUẢN LÝ NGOẠI HỐI ĐỐI VỚI HOẠT ĐỘNG ĐẦU TƯ TRỰC TIẾP NƯỚC NGOÀI VÀO VIỆT NAM"
+    },
+    {
+     "id": "21398",
+     "title": "Luat Doanh nghiep so 59 2020 QH14 427301 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "135768",
+   "question": "10 khoản thu nhập chịu thuế TNCN năm 2023 là gì?",
+   "gold": "129823",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 90,
+   "gold_title": "Bo Luat lao dong 2019 333670 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "240117",
+     "title": "Luat thue thu nhap ca nhan 2007 04 2007 QH12 59652 | 04/2007/QH12 | QUỐC HỘI"
+    },
+    {
+     "id": "171570",
+     "title": "Thong tu 111 2013 TT BTC Huong dan Luat thue thu nhap ca nhan va Nghi dinh 65 2013 ND CP 205356 | 111/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN LUẬT THUẾ THU NHẬP CÁ NHÂN, LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN VÀ NGHỊ ĐỊNH SỐ 65/2013/NĐ-CP CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN VÀ LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT"
+    },
+    {
+     "id": "264280",
+     "title": "Luat thue thu nhap doanh nghiep 2008 66935 | 14/2008/QH12 LUẬT THUẾ THU NHẬP DOANH NGHIỆP"
+    },
+    {
+     "id": "25945",
+     "title": "1381/TCT-TNCN | BỘ TÀI CHÍNH TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "161768",
+     "title": "219/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH LUẬT THUẾ GIÁ TRỊ GIA TĂNG VÀ NGHỊ ĐỊNH SỐ 209/2013/NĐ-CP NGÀY 18/12/2013 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    }
+   ]
+  },
+  {
+   "question_id": "135768",
+   "question": "10 khoản thu nhập chịu thuế TNCN năm 2023 là gì?",
+   "gold": "111323",
+   "gold_count": 3,
+   "candidate_rank": 4,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi dinh 65 2013 ND CP huong dan Luat thue thu nhap ca nhan 2007 sua doi 2012 196609 | 65/2013/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN VÀ LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN",
+   "predicted": [
+    {
+     "id": "240117",
+     "title": "Luat thue thu nhap ca nhan 2007 04 2007 QH12 59652 | 04/2007/QH12 | QUỐC HỘI"
+    },
+    {
+     "id": "171570",
+     "title": "Thong tu 111 2013 TT BTC Huong dan Luat thue thu nhap ca nhan va Nghi dinh 65 2013 ND CP 205356 | 111/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN LUẬT THUẾ THU NHẬP CÁ NHÂN, LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN VÀ NGHỊ ĐỊNH SỐ 65/2013/NĐ-CP CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT THUẾ THU NHẬP CÁ NHÂN VÀ LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT"
+    },
+    {
+     "id": "264280",
+     "title": "Luat thue thu nhap doanh nghiep 2008 66935 | 14/2008/QH12 LUẬT THUẾ THU NHẬP DOANH NGHIỆP"
+    },
+    {
+     "id": "25945",
+     "title": "1381/TCT-TNCN | BỘ TÀI CHÍNH TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "161768",
+     "title": "219/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH LUẬT THUẾ GIÁ TRỊ GIA TĂNG VÀ NGHỊ ĐỊNH SỐ 209/2013/NĐ-CP NGÀY 18/12/2013 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU LUẬT THUẾ GIÁ TRỊ GIA TĂNG"
+    }
+   ]
+  },
+  {
+   "question_id": "51028",
+   "question": "Mức lương của sĩ quan nghiệp vụ được bổ nhiệm vào ngạch Thanh tra viên cao cấp Công an nhân dân là bao nhiêu?",
+   "gold": "284539",
+   "gold_count": 3,
+   "candidate_rank": 146,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 5,
+   "gold_title": "Nghi quyet 69 2022 QH15 du toan ngan sach nha nuoc 2023 541860 | NGHỊ QUYẾT VỀ DỰ TOÁN NGÂN SÁCH NHÀ NƯỚC NĂM 2023 QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "75988",
+     "title": "Quyet dinh 09 2010 QD TTg tieu chuan cac ngach Thanh tra vien Cong an nhan dan 101241 | 09/2010/QĐ-TTg | QUYẾT ĐỊNH QUY ĐỊNH TIÊU CHUẨN CÁC NGẠCH THANH TRA VIÊN CÔNG AN NHÂN DÂN THỦ TƯỚNG CHÍNH PHỦ"
+    },
+    {
+     "id": "236481",
+     "title": "Nghi dinh 97 2011 ND CP thanh tra vien va cong tac vien thanh tra 130813 | 97/2011/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THANH TRA VIÊN VÀ CỘNG TÁC VIÊN THANH TRA CHÍNH PHỦ"
+    },
+    {
+     "id": "103601",
+     "title": "Nghi dinh 49 2019 ND CP huong dan Luat Cong an nhan dan 406963 | 49/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    }
+   ]
+  },
+  {
+   "question_id": "51028",
+   "question": "Mức lương của sĩ quan nghiệp vụ được bổ nhiệm vào ngạch Thanh tra viên cao cấp Công an nhân dân là bao nhiêu?",
+   "gold": "166505",
+   "gold_count": 3,
+   "candidate_rank": 3,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 9,
+   "gold_title": "204/2004/NĐ-CP | NGHỊ ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG. CHÍNH PHỦ",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "75988",
+     "title": "Quyet dinh 09 2010 QD TTg tieu chuan cac ngach Thanh tra vien Cong an nhan dan 101241 | 09/2010/QĐ-TTg | QUYẾT ĐỊNH QUY ĐỊNH TIÊU CHUẨN CÁC NGẠCH THANH TRA VIÊN CÔNG AN NHÂN DÂN THỦ TƯỚNG CHÍNH PHỦ"
+    },
+    {
+     "id": "236481",
+     "title": "Nghi dinh 97 2011 ND CP thanh tra vien va cong tac vien thanh tra 130813 | 97/2011/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THANH TRA VIÊN VÀ CỘNG TÁC VIÊN THANH TRA CHÍNH PHỦ"
+    },
+    {
+     "id": "103601",
+     "title": "Nghi dinh 49 2019 ND CP huong dan Luat Cong an nhan dan 406963 | 49/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    }
+   ]
+  },
+  {
+   "question_id": "51028",
+   "question": "Mức lương của sĩ quan nghiệp vụ được bổ nhiệm vào ngạch Thanh tra viên cao cấp Công an nhân dân là bao nhiêu?",
+   "gold": "43443",
+   "gold_count": 3,
+   "candidate_rank": 52,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 15,
+   "gold_title": "Nghi dinh 38 2019 ND CP muc luong co so doi voi can bo cong chuc vien chuc va luc luong vu trang 403 | 38/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "75988",
+     "title": "Quyet dinh 09 2010 QD TTg tieu chuan cac ngach Thanh tra vien Cong an nhan dan 101241 | 09/2010/QĐ-TTg | QUYẾT ĐỊNH QUY ĐỊNH TIÊU CHUẨN CÁC NGẠCH THANH TRA VIÊN CÔNG AN NHÂN DÂN THỦ TƯỚNG CHÍNH PHỦ"
+    },
+    {
+     "id": "236481",
+     "title": "Nghi dinh 97 2011 ND CP thanh tra vien va cong tac vien thanh tra 130813 | 97/2011/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THANH TRA VIÊN VÀ CỘNG TÁC VIÊN THANH TRA CHÍNH PHỦ"
+    },
+    {
+     "id": "103601",
+     "title": "Nghi dinh 49 2019 ND CP huong dan Luat Cong an nhan dan 406963 | 49/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ BIỆN PHÁP THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    }
+   ]
+  },
+  {
+   "question_id": "78874",
+   "question": "Có thể gửi hồ sơ đề nghị cấp Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm online được không?",
+   "gold": "105608",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi dinh 67 2016 ND CP dieu kien san xuat kinh doanh thuc pham quan ly chuyen nganh Bo Y te 316650 | 67/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ ĐIỀU KIỆN SẢN XUẤT, KINH DOANH THỰC PHẨM THUỘC LĨNH VỰC QUẢN LÝ CHUYÊN NGÀNH CỦA BỘ Y TẾ",
+   "predicted": [
+    {
+     "id": "20261",
+     "title": "Nghi dinh 15 2018 ND CP huong dan Luat an toan thuc pham 341254 | 15/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT AN TOÀN THỰC PHẨM"
+    },
+    {
+     "id": "93527",
+     "title": "Thong tu 38 2018 TT BNNPTNT tham dinh co so san xuat thuc pham nong lam an toan thuc pham 406512 | 38/2018/TT-BNNPTNT | THÔNG TƯ QUY ĐỊNH VIỆC THẨM ĐỊNH, CHỨNG NHẬN CƠ SỞ SẢN XUẤT, KINH DOANH THỰC PHẨM NÔNG, LÂM, THỦY SẢN ĐỦ ĐIỀU KIỆN AN TOÀN THỰC PHẨM THUỘC PHẠM VI QUẢN LÝ CỦA BỘ NÔNG NGHIỆP VÀ PHÁT TRIỂN NÔNG THÔN"
+    },
+    {
+     "id": "55414",
+     "title": "Thong tu 43 2018 TT BCT quan ly an toan thuc pham thuoc trach nhiem cua Bo Cong thuong 400848 | 43/2018/TT-BCT | THÔNG TƯ QUY ĐỊNH VỀ QUẢN LÝ AN TOÀN THỰC PHẨM THUỘC TRÁCH NHIỆM CỦA BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "219533",
+     "title": "Luat an toan thuc pham 2010 108074 | LUẬT AN TOÀN THỰC PHẨM"
+    },
+    {
+     "id": "110588",
+     "title": "Nghi dinh 17 2020 ND CP sua doi Nghi dinh lien quan dieu kien dau tu kinh doanh Bo Cong thuong 43438 | 17/2020/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH LIÊN QUAN ĐẾN ĐIỀU KIỆN ĐẦU TƯ KINH DOANH THUỘC LĨNH VỰC QUẢN LÝ NHÀ NƯỚC CỦA BỘ CÔNG THƯƠNG"
+    }
+   ]
+  },
+  {
+   "question_id": "1486",
+   "question": "Hộ kê khai sử dụng hoá đơn điện tử được quy định như thế nào?",
+   "gold": "177345",
+   "gold_count": 2,
+   "candidate_rank": 17,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 6,
+   "gold_title": "Thong tu 40 2021 TT BTC huong dan thue gia tri gia tang thue thu nhap ca nhan 477635 | 40/2021/TT-BTC | THÔNG TƯ HƯỚNG DẪN THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP CÁ NHÂN VÀ QUẢN LÝ THUẾ ĐỐI VỚI HỘ KINH DOANH, CÁ NHÂN KINH DOANH",
+   "predicted": [
+    {
+     "id": "231881",
+     "title": "Nghi dinh 123 2020 ND CP quy dinh hoa don chung tu 445980 | 123/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ HÓA ĐƠN, CHỨNG TỪ"
+    },
+    {
+     "id": "103064",
+     "title": "Quyet dinh 1447 QD TCT 2021 quan ly hoa don dien tu 500136 | 1447/QĐ-TCT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY TRÌNH QUẢN LÝ HÓA ĐƠN ĐIỆN TỬ TỔNG CỤC TRƯỞNG TỔNG CỤC THUẾ"
+    },
+    {
+     "id": "88615",
+     "title": "Nghi dinh 119 2018 ND CP quy dinh ve hoa don dien tu khi ban hang hoa cung cap dich vu 394152 | 119/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ HÓA ĐƠN ĐIỆN TỬ KHI BÁN HÀNG HÓA, CUNG CẤP DỊCH VỤ"
+    },
+    {
+     "id": "161949",
+     "title": "Luat quan ly thue 2019 387595 | QUỐC HỘI"
+    },
+    {
+     "id": "70028",
+     "title": "Thong tu 32 2011 TT BTC huong dan ve khoi tao phat hanh su dung hoa don dien tu 120233 | 32/2011/TT-BTC | THÔNG TƯ HƯỚNG DẪN VỀ KHỞI TẠO, PHÁT HÀNH VÀ SỬ DỤNG HOÁ ĐƠN ĐIỆN TỬ BÁN HÀNG HÓA, CUNG ỨNG DỊCH VỤ"
+    }
+   ]
+  },
+  {
+   "question_id": "158260",
+   "question": "Lệ phí thi là bao nhiêu?",
+   "gold": "103580",
+   "gold_count": 1,
+   "candidate_rank": 12,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Thong tu 188 2016 TT BTC phi sat hach lai xe le phi cap giay phep lai xe dang ky cap bien xe may chu | 188/2016/TT-BTC | THÔNG TƯ QUY ĐỊNH MỨC THU, CHẾ ĐỘ THU, NỘP, QUẢN LÝ VÀ SỬ DỤNG PHÍ SÁT HẠCH LÁI XE; LỆ PHÍ CẤP BẰNG, CHỨNG CHỈ HOẠT ĐỘNG TRÊN CÁC PHƯƠNG TIỆN VÀ LỆ PHÍ ĐĂNG KÝ, CẤP BIỂN XE MÁY CHUYÊN DÙNG",
+   "predicted": [
+    {
+     "id": "233287",
+     "title": "Nghi dinh 139 2016 ND CP le phi mon bai 315033 | 139/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ LỆ PHÍ MÔN BÀI"
+    },
+    {
+     "id": "160848",
+     "title": "Thong tu 302 2016 TT BTC huong dan le phi mon bai 326995 | 302/2016/TT-BTC | THÔNG TƯ HƯỚNG DẪN VỀ LỆ PHÍ MÔN BÀI"
+    },
+    {
+     "id": "17754",
+     "title": "Luat phi va le phi 2015 298376 | QUỐC HỘI"
+    },
+    {
+     "id": "46918",
+     "title": "Bo luat to tung dan su 2015 296861 | I NHIỆM VỤ VÀ HIỆU LỰC CỦA BỘ LUẬT TỐ TỤNG DÂN SỰ"
+    },
+    {
+     "id": "298187",
+     "title": "Thong tu 216 2016 TT BTC muc thu che do thu nop quan ly su dung phi thi hanh an dan su 295121 | 216/2016/TT-BTC | THÔNG TƯ QUY ĐỊNH MỨC THU, CHẾ ĐỘ THU, NỘP, QUẢN LÝ VÀ SỬ DỤNG PHÍ THI HÀNH ÁN DÂN SỰ"
+    }
+   ]
+  },
+  {
+   "question_id": "102928",
+   "question": "Chính sách hỗ trợ đào tạo nghề nghiệp đối với người chấp hành án phạt tù là gì?",
+   "gold": "56310",
+   "gold_count": 2,
+   "candidate_rank": 133,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 18 2022 TT BLDTBXH bai bo van ban quy pham phap luat 531025 | 18/2022/TT-BLĐTBXH | THÔNG TƯ BÃI BỎ VĂN BẢN QUY PHẠM PHÁP LUẬT DO BỘ TRƯỞNG BỘ LAO ĐỘNG - THƯƠNG BINH VÀ XÃ HỘI BAN HÀNH, LIÊN TỊCH BAN HÀNH BỘ TRƯỞNG BỘ LAO ĐỘNG - THƯƠNG BINH VÀ XÃ HỘI",
+   "predicted": [
+    {
+     "id": "302430",
+     "title": "Thong tu 44 2016 TT BLDTBXH dao tao nghe nghiep tao viec lam nguoi chap hanh xong an phat tu 339892 | 44/2016/TT-BLĐTBXH | THÔNG TƯ HƯỚNG DẪN CHÍNH SÁCH ĐÀO TẠO NGHỀ NGHIỆP, TẠO VIỆC LÀM CHO NGƯỜI CHẤP HÀNH XONG ÁN PHẠT TÙ"
+    },
+    {
+     "id": "281703",
+     "title": "Nghi dinh 49 2020 ND CP 2020 huong dan Luat Thi hanh an hinh su tai hoa nhap cong dong 440365 | 49/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT THI HÀNH ÁN HÌNH SỰ VỀ TÁI HÒA NHẬP CỘNG ĐỒNG"
+    },
+    {
+     "id": "273332",
+     "title": "Thong tu 43 2016 TT BLDTBXH huong dan chinh sach dao tao nghe Dieu 14 Nghi dinh 61 2015 ND CP 336529 | 43/2016/TT-BLĐTBXH | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN CHÍNH SÁCH HỖ TRỢ ĐÀO TẠO NGHỀ CHO CÁC ĐỐI TƯỢNG QUY ĐỊNH TẠI ĐIỀU 14 NGHỊ ĐỊNH SỐ 61/2015/NĐ-CP NGÀY 09 THÁNG 7 NĂM 2015 CỦA CHÍNH PHỦ VỀ CHÍNH SÁCH HỖ TRỢ TẠO VIỆC LÀM VÀ QUỸ QUỐC GIA VỀ VIỆC LÀM"
+    },
+    {
+     "id": "42692",
+     "title": "Nghi dinh 133 2020 ND CP huong dan Luat Thi hanh an hinh su 427247 | 133/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT THI HÀNH ÁN HÌNH SỰ"
+    },
+    {
+     "id": "71551",
+     "title": "Nghi dinh 28 2015 ND CP huong dan Luat Viec lam va bao hiem that nghiep 268405 | 28/2015/NĐ-CP | II HỖ TRỢ ĐÀO TẠO, BỒI DƯỠNG, NÂNG CAO TRÌNH ĐỘ KỸ NĂNG NGHỀ ĐỂ DUY TRÌ VIỆC LÀM CHO NGƯỜI LAO ĐỘNG"
+    }
+   ]
+  },
+  {
+   "question_id": "16858",
+   "question": "Cơ quan nào có nhiệm vụ xây dựng đề án phát hành trái phiếu quốc tế?",
+   "gold": "181952",
+   "gold_count": 2,
+   "candidate_rank": 4,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 3,
+   "gold_title": "Luat Quan ly no cong 337165 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "227727",
+     "title": "Nghi dinh 53 2009 ND CP phat hanh trai phieu quoc te 89335 | 53/2009/NĐ-CP | NGHỊ ĐỊNH VỀ PHÁT HÀNH TRÁI PHIẾU QUỐC TẾ CHÍNH PHỦ"
+    },
+    {
+     "id": "208001",
+     "title": "Nghi dinh 95 2018 ND CP dang ky giao dich cong cu no cua Chinh phu tren thi truong chung khoan 38640 | 95/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ PHÁT HÀNH, ĐĂNG KÝ, LƯU KÝ, NIÊM YẾT VÀ GIAO DỊCH CÔNG CỤ NỢ CỦA CHÍNH PHỦ TRÊN THỊ TRƯỜNG CHỨNG KHOÁN"
+    },
+    {
+     "id": "199374",
+     "title": "Nghi dinh 01 2011 ND CP phat hanh trai phieu Chinh phu 117016 | 01/2011/NĐ-CP | NGHỊ ĐỊNH VỀ PHÁT HÀNH TRÁI PHIẾU CHÍNH PHỦ, TRÁI PHIẾU ĐƯỢC CHÍNH PHỦ BẢO LÃNH VÀ TRÁI PHIẾU CHÍNH QUYỀN ĐỊA PHƯƠNG CHÍNH PHỦ"
+    },
+    {
+     "id": "70436",
+     "title": "Nghi dinh 153 2020 ND CP chao ban giao dich trai phieu doanh nghiep tai thi truong trong nuoc 461187 | 153/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ CHÀO BÁN, GIAO DỊCH TRÁI PHIẾU DOANH NGHIỆP RIÊNG LẺ TẠI THỊ TRƯỜNG TRONG NƯỚC VÀ CHÀO BÁN TRÁI PHIẾU DOANH NGHIỆP RA THỊ TRƯỜNG QUỐC TẾ"
+    },
+    {
+     "id": "126546",
+     "title": "Nghi dinh 163 2018 ND CP quy dinh ve phat hanh trai phieu doanh nghiep 365270 | 163/2018/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ PHÁT HÀNH TRÁI PHIẾU DOANH NGHIỆP"
+    }
+   ]
+  },
+  {
+   "question_id": "108584",
+   "question": "Có được nuôi chó trong chung cư hay không?",
+   "gold": "141634",
+   "gold_count": 2,
+   "candidate_rank": 3,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 3,
+   "gold_title": "Nghi dinh 99 2015 ND CP huong dan Luat Nha o 294439 | 99/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT NHÀ Ở",
+   "predicted": [
+    {
+     "id": "6411",
+     "title": "Luat Nha o 2014 259721 | QUỐC HỘI"
+    },
+    {
+     "id": "97004",
+     "title": "Thong tu 02 2016 TT BXD quy che quan ly su dung nha chung cu 282744 | 02/2016/TT-BXD | THÔNG TƯ BAN HÀNH QUY CHẾ QUẢN LÝ, SỬ DỤNG NHÀ CHUNG CƯ"
+    },
+    {
+     "id": "35408",
+     "title": "Luat nuoi con nuoi 2010 108082 | QUỐC HỘI"
+    },
+    {
+     "id": "153173",
+     "title": "Luat Chan nuoi 2018 353242 | QUỐC HỘI"
+    },
+    {
+     "id": "81598",
+     "title": "Bo luat dan su 2015 296215 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "159112",
+   "question": "Mức tối đa giá xăng dầu sau khi thực hiện chi sử dụng Quỹ Bình ổn giá xăng dầu là bao nhiêu?",
+   "gold": "73607",
+   "gold_count": 1,
+   "candidate_rank": 5,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "1214/BCT-TTTN | BỘ CÔNG THƯƠNG",
+   "predicted": [
+    {
+     "id": "151206",
+     "title": "Thong tu 103 2021 TT BTC huong dan phuong thuc trich lap Quy binh on gia xang dau 495500 | 103/2021/TT-BTC | THÔNG TƯ HƯỚNG DẪN PHƯƠNG THỨC TRÍCH LẬP, CHI SỬ DỤNG, QUẢN LÝ QUỸ BÌNH ỔN GIÁ XĂNG DẦU"
+    },
+    {
+     "id": "262587",
+     "title": "3942/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "198845",
+     "title": "5621/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    },
+    {
+     "id": "169300",
+     "title": "Nghi dinh 95 2021 ND CP sua doi Nghi dinh 83 2014 ND CP 465893 | 95/2021/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 83/2014/NĐ-CP NGÀY 03 THÁNG 9 NĂM 2014 VỀ KINH DOANH XĂNG DẦU"
+    },
+    {
+     "id": "185771",
+     "title": "8243/BCT-TTTN | BỘ CÔNG THƯƠNG"
+    }
+   ]
+  },
+  {
+   "question_id": "32594",
+   "question": "Không còn sử dụng sổ hộ khẩu, sổ tạm trú khi đăng ký thường trú, cư trú từ năm 2023 đúng không?",
+   "gold": "60683",
+   "gold_count": 2,
+   "candidate_rank": 7,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 2,
+   "gold_title": "Nghi dinh 104 2022 ND CP sua doi Nghi dinh nop xuat trinh so ho khau thuc hien thu tuc hanh chinh 54 | 104/2022/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH LIÊN QUAN ĐẾN VIỆC NỘP, XUẤT TRÌNH SỔ HỘ KHẨU, SỔ TẠM TRÚ GIẤY KHI THỰC HIỆN THỦ TỤC HÀNH CHÍNH, CUNG CẤP DỊCH VỤ CÔNG",
+   "predicted": [
+    {
+     "id": "72265",
+     "title": "Luat 68 2020 QH14 cu tru 435315 | QUỐC HỘI"
+    },
+    {
+     "id": "64367",
+     "title": "Nghi dinh 62 2021 ND CP huong dan Luat Cu tru 473325 | 62/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU LUẬT CƯ TRÚ"
+    },
+    {
+     "id": "274899",
+     "title": "Thong tu 36 2014 TT BCA bieu mau su dung trong dang ky quan ly cu tru 250026 | 36/2014/TT-BCA | THÔNG TƯ QUY ĐỊNH VỀ BIỂU MẪU SỬ DỤNG TRONG ĐĂNG KÝ, QUẢN LÝ CƯ TRÚ"
+    },
+    {
+     "id": "122021",
+     "title": "104/2022/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA CÁC NGHỊ ĐỊNH LIÊN QUAN ĐẾN VIỆC NỘP, XUẤT TRÌNH SỔ HỘ KHẨU, SỔ TẠM TRÚ GIẤY KHI THỰC HIỆN THỦ TỤC HÀNH CHÍNH, CUNG CẤP DỊCH VỤ CÔNG"
+    },
+    {
+     "id": "282952",
+     "title": "Thong tu 09 2021 TT BXD huong dan thuc hien Nghi dinh 100 2015 ND CP 477967 | 09/2021/TT-BXD | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ NỘI DUNG CỦA NGHỊ ĐỊNH SỐ 100/2015/NĐ-CP NGÀY 20 THÁNG 10 NĂM 2015 CỦA CHÍNH PHỦ VỀ PHÁT TRIỂN VÀ QUẢN LÝ NHÀ Ở XÃ HỘI VÀ NGHỊ ĐỊNH SỐ 49/2021/NĐ-CP NGÀY 01 THÁNG 4 NĂM 2021 CỦA CHÍNH PHỦ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 100/2015/NĐ-CP"
+    }
+   ]
+  },
+  {
+   "question_id": "149396",
+   "question": "Công dân đạt thành tính học sinh giỏi cấp tỉnh được tuyển chọn vào Công an nhân dân theo phương thức nào?",
+   "gold": "43779",
+   "gold_count": 2,
+   "candidate_rank": 13,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 2,
+   "gold_title": "Nghi dinh 140 2017 ND CP chinh sach thu hut tao nguon can bo tu sinh vien tot nghiep xuat sac 369422 | 140/2017/NĐ-CP | NGHỊ ĐỊNH VỀ CHÍNH SÁCH THU HÚT, TẠO NGUỒN CÁN BỘ TỪ SINH VIÊN TỐT NGHIỆP XUẤT SẮC, CÁN BỘ KHOA HỌC TRẺ",
+   "predicted": [
+    {
+     "id": "139278",
+     "title": "Thong tu 55 2019 TT BCA tuyen chon cong dan vao Cong an nhan dan 456770 | 55/2019/TT-BCA | THÔNG TƯ QUY ĐỊNH TUYỂN CHỌN CÔNG DÂN VÀO CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "283457",
+     "title": "Luat Cong an nhan dan 384487 | QUỐC HỘI"
+    },
+    {
+     "id": "72534",
+     "title": "Nghi dinh 70 2019 ND CP quy dinh thuc hien nghia vu tham gia Cong an nhan dan 422275 | 70/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THỰC HIỆN NGHĨA VỤ THAM GIA CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "102008",
+     "title": "Thong tu 15 2016 TT BCA tuyen sinh vao cac truong cong an nhan dan 306993 | 15/2016/TT-BCA | THÔNG TƯ QUY ĐỊNH VỀ TUYỂN SINH VÀO CÁC TRƯỜNG CÔNG AN NHÂN DÂN"
+    },
+    {
+     "id": "54776",
+     "title": "Luat nghia vu quan su 2015 282383 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "143246",
+   "question": "Trình tự theo dõi việc chuyển phát văn bản đi được thực hiện như thế nào?",
+   "gold": "280907",
+   "gold_count": 1,
+   "candidate_rank": 10,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Quyet dinh 2899 QD NHNN nam 2013 Quy che cong tac van thu luu tru ngan hang nha nuoc 258600 | 2899/QĐ-NHNN | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ CÔNG TÁC VĂN THƯ VÀ LƯU TRỮ CỦA NGÂN HÀNG NHÀ NƯỚC VIỆT NAM THỐNG ĐỐC NGÂN HÀNG NHÀ NƯỚC VIỆT NAM",
+   "predicted": [
+    {
+     "id": "224257",
+     "title": "Nghi dinh 30 2020 ND CP cong tac van thu 436532 | 30/2020/NĐ-CP | NGHỊ ĐỊNH VỀ CÔNG TÁC VĂN THƯ"
+    },
+    {
+     "id": "264709",
+     "title": "Quyet dinh 4345 QD BYT quy che cong tac van thu 2015 314424 | 4345/QĐ-BYT | QUYẾT ĐỊNH BAN HÀNH “QUY CHẾ CÔNG TÁC VĂN THƯ CỦA BỘ Y TẾ” BỘ TRƯỞNG BỘ Y TẾ"
+    },
+    {
+     "id": "37130",
+     "title": "Quyet dinh 01 QD TANDTC 2022 Quy che van thu trong he thong Toa an nhan dan 499476 | 01/QĐ-TANDTC | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ CÔNG TÁC VĂN THƯ TRONG HỆ THỐNG TÒA ÁN NHÂN DÂN CHÁNH ÁN TÒA ÁN NHÂN DÂN TỐI CAO"
+    },
+    {
+     "id": "169478",
+     "title": "Quyet dinh 2175 QD KTNN nam 2014 Quy che cong tac van thu luu tru Kiem toan Nha nuoc 259832 | 2175/QĐ-KTNN | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ CÔNG TÁC VĂN THƯ, LƯU TRỮ CỦA KIỂM TOÁN NHÀ NƯỚC TỔNG KIỂM TOÁN NHÀ NƯỚC"
+    },
+    {
+     "id": "253426",
+     "title": "Quyet dinh 1032 QD BNV 2020 Quy che cong tac van thu luu tru cua Bo Noi vu 458504 | 1032/QĐ-BNV | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ CÔNG TÁC VĂN THƯ, LƯU TRỮ CỦA BỘ NỘI VỤ BỘ TRƯỞNG BỘ NỘI VỤ"
+    }
+   ]
+  },
+  {
+   "question_id": "39790",
+   "question": "Đơn vị lắp đặt ngoài việc có đủ điều kiện trang thiết bị kỹ thuật phục vụ cho công việc bảo dưỡng sàn nâng cần đảm bảo các tiêu chí nào?",
+   "gold": "10533",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "",
+   "predicted": [
+    {
+     "id": "26290",
+     "title": ""
+    },
+    {
+     "id": "111217",
+     "title": ""
+    },
+    {
+     "id": "218158",
+     "title": "Thong tu 16 2021 TT BXD Quy chuan ky thuat An toan trong thi cong xay dung 499054 | 16/2021/TT-BXD | THÔNG TƯ BAN HÀNH QCVN 18:2021/BXD QUY CHUẨN KỸ THUẬT QUỐC GIA VỀ AN TOÀN TRONG THI CÔNG XÂY DỰNG"
+    },
+    {
+     "id": "274765",
+     "title": ""
+    },
+    {
+     "id": "226902",
+     "title": "Thong tu 50 2015 TT BLDTBXH quy chuan ky thuat quoc gia an toan lao dong he thong lanh 297992 | 50/2015/TT-BLĐTBXH | THÔNG TƯ BAN HÀNH QUY CHUẨN KỸ THUẬT QUỐC GIA VỀ AN TOÀN LAO ĐỘNG ĐỐI VỚI HỆ THỐNG LẠNH"
+    }
+   ]
+  },
+  {
+   "question_id": "28152",
+   "question": "Việc xác định thời điểm hoạt động kinh doanh của hộ kinh doanh quy định như thế nào? ",
+   "gold": "186584",
+   "gold_count": 2,
+   "candidate_rank": 47,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 3,
+   "gold_title": "Nghi dinh 122 2021 ND CP xu phat vi pham hanh chinh linh vuc ke hoach 285024 | 122/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ XỬ PHẠT VI PHẠM HÀNH CHÍNH TRONG LĨNH VỰC KẾ HOẠCH VÀ ĐẦU TƯ",
+   "predicted": [
+    {
+     "id": "200355",
+     "title": "Nghi dinh 01 2021 ND CP dang ky doanh nghiep 283247 | 01/2021/NĐ-CP | NGHỊ ĐỊNH VỀ ĐĂNG KÝ DOANH NGHIỆP"
+    },
+    {
+     "id": "249551",
+     "title": "Nghi dinh 78 2015 ND CP dang ky doanh nghiep 290547 | 78/2015/NĐ-CP | NGHỊ ĐỊNH VỀ ĐĂNG KÝ DOANH NGHIỆP"
+    },
+    {
+     "id": "197551",
+     "title": "Thong tu 02 2023 TT BKHDT sua doi Thong tu 01 2021 TT BKHDT dang ky doanh nghiep 563848 | 02/2023/TT-BKHĐT | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA THÔNG TƯ SỐ 01/2021/TT-BKHĐT NGÀY 16 THÁNG 3 NĂM 2021 CỦA BỘ TRƯỞNG BỘ KẾ HOẠCH VÀ ĐẦU TƯ HƯỚNG DẪN VỀ ĐĂNG KÝ DOANH NGHIỆP"
+    },
+    {
+     "id": "288060",
+     "title": "Thong tu 01 2021 TT BKHDT huong dan dang ky doanh nghiep 465911 | 01/2021/TT-BKHĐT | BỘ KẾ HOẠCH VÀ ĐẦU TƯ"
+    },
+    {
+     "id": "177345",
+     "title": "Thong tu 40 2021 TT BTC huong dan thue gia tri gia tang thue thu nhap ca nhan 477635 | 40/2021/TT-BTC | THÔNG TƯ HƯỚNG DẪN THUẾ GIÁ TRỊ GIA TĂNG, THUẾ THU NHẬP CÁ NHÂN VÀ QUẢN LÝ THUẾ ĐỐI VỚI HỘ KINH DOANH, CÁ NHÂN KINH DOANH"
+    }
+   ]
+  },
+  {
+   "question_id": "148494",
+   "question": "Việc thu tiền dịch vụ sử dụng đường bộ có thể thực hiện theo những phương thức nào?",
+   "gold": "107319",
+   "gold_count": 2,
+   "candidate_rank": 19,
+   "was_reranked": true,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 0,
+   "gold_title": "Van ban hop nhat 15 VBHN VPQH 2019 Luat Giao thong duong bo 424690 | 15/VBHN-VPQH | VĂN PHÒNG QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "204602",
+     "title": "Thong tu 45 2021 TT BGTVT hoat dong tram thu phi duong bo 502706 | 45/2021/TT-BGTVT | THÔNG TƯ QUY ĐỊNH VỀ HOẠT ĐỘNG TRẠM THU PHÍ ĐƯỜNG BỘ"
+    },
+    {
+     "id": "169350",
+     "title": "Quyet dinh 19 2020 QD TTg thu phi dich vu su dung duong bo theo hinh thuc dien tu khong dung 445168 | 19/2020/QĐ-TTg | QUYẾT ĐỊNH VỀ VIỆC THU PHÍ DỊCH VỤ SỬ DỤNG ĐƯỜNG BỘ THEO HÌNH THỨC ĐIỆN TỬ KHÔNG DỪNG."
+    },
+    {
+     "id": "282608",
+     "title": "Thong tu 28 2021 TT BGTVT sua doi Thong tu ve muc gia toi da dich vu su dung duong bo 497048 | 28/2021/TT-BGTVT | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA THÔNG TƯ SỐ 35/2016/TT-BGTVT NGÀY 15 THÁNG 11 NĂM 2016 CỦA BỘ TRƯỞNG BỘ GIAO THÔNG VẬN TẢI QUY ĐỊNH MỨC GIÁ TỐI ĐA DỊCH VỤ SỬ DỤNG ĐƯỜNG BỘ CÁC DỰ ÁN ĐẦU TƯ XÂY DỰNG ĐƯỜNG BỘ ĐỂ KINH DOANH DO BỘ GIAO THÔNG VẬN TẢI QUẢN LÝ"
+    },
+    {
+     "id": "231881",
+     "title": "Nghi dinh 123 2020 ND CP quy dinh hoa don chung tu 445980 | 123/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ HÓA ĐƠN, CHỨNG TỪ"
+    },
+    {
+     "id": "116269",
+     "title": "Thong tu 70 2021 TT BTC che do thu nop mien quan ly va su dung phi su dung duong bo 484826 | 70/2021/TT-BTC | THÔNG TƯ QUY ĐỊNH MỨC THU, CHẾ ĐỘ THU, NỘP, MIỄN, QUẢN LÝ VÀ SỬ DỤNG PHÍ SỬ DỤNG ĐƯỜNG BỘ"
+    }
+   ]
+  },
+  {
+   "question_id": "113678",
+   "question": "Doanh nghiệp chế xuất chọn hình thức chuyển mục đích sử dụng khi bán hàng hóa vào nội địa thì cần xuất hóa đơn không?",
+   "gold": "222640",
+   "gold_count": 3,
+   "candidate_rank": 6,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 2,
+   "gold_title": "Thong tu 38 2015 TT BTC thu tuc hai quan thue xuat khau nhap khau quan ly thue hang xuat nhap khau 2 | 38/2015/TT-BTC | THÔNG TƯ QUY ĐỊNH VỀ THỦ TỤC HẢI QUAN; KIỂM TRA, GIÁM SÁT HẢI QUAN; THUẾ XUẤT KHẨU, THUẾ NHẬP KHẨU VÀ QUẢN LÝ THUẾ ĐỐI VỚI HÀNG HOÁ XUẤT KHẨU, NHẬP KHẨU.",
+   "predicted": [
+    {
+     "id": "231881",
+     "title": "Nghi dinh 123 2020 ND CP quy dinh hoa don chung tu 445980 | 123/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ HÓA ĐƠN, CHỨNG TỪ"
+    },
+    {
+     "id": "271167",
+     "title": "Thong tu 39 2014 TT BTC huong dan 51 2010 ND CP 04 2014 ND CP hoa don ban hang hoa dich vu 229190 | 39/2014/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH NGHỊ ĐỊNH SỐ 51/2010/NĐ-CP NGÀY 14 THÁNG 5 NĂM 2010 VÀ NGHỊ ĐỊNH SỐ 04/2014/NĐ-CP NGÀY 17 THÁNG 01 NĂM 2014 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ HÓA ĐƠN BÁN HÀNG HÓA, CUNG ỨNG DỊCH VỤ"
+    },
+    {
+     "id": "177389",
+     "title": "Thong tu 39 2018 TT BTC sua doi Thong tu 38 2015 TT BTC kiem tra giam sat hai quan 342345 | 39/2018/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU TẠI THÔNG TƯ SỐ 38/2015/TT-BTC NGÀY 25 THÁNG 3 NĂM 2015 CỦA BỘ TRƯỞNG BỘ TÀI CHÍNH QUY ĐỊNH VỀ THỦ TỤC HẢI QUAN; KIỂM TRA, GIÁM SÁT HẢI QUAN; THUẾ XUẤT KHẨU, THUẾ NHẬP KHẨU VÀ QUẢN LÝ THUẾ ĐỐI VỚI HÀNG HÓA XUẤT KHẨU, NHẬP KHẨU"
+    },
+    {
+     "id": "243954",
+     "title": "Thong tu 119 2014 TT BTC sua doi cac thong tu de cai cach don gian thu tuc hanh chinh ve thue 246608 | 119/2014/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA THÔNG TƯ SỐ 156/2013/TT-BTC NGÀY 06/11/2013, THÔNG TƯ SỐ 111/2013/TT-BTC NGÀY 15/8/2013, THÔNG TƯ SỐ 219/2013/TT-BTC NGÀY 31/12/2013, THÔNG TƯ SỐ 08/2013/TT-BTC NGÀY 10/01/2013, THÔNG TƯ SỐ 85/2011/TT-BTC NGÀY 17/6/2011,­­ THÔNG TƯ SỐ 39/2014/TT-BTC NGÀY 31/3/2014 VÀ THÔNG TƯ SỐ 78/2014/TT-BTC NGÀY 18/6/2014 CỦA BỘ TÀI CHÍNH ĐỂ CẢI CÁCH,"
+    },
+    {
+     "id": "216984",
+     "title": "Thong tu 68 2019 TT BTC huong dan thuc hien Nghi dinh 119 2018 ND CP ve hoa don dien tu 405141 | 68/2019/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2018/NĐ-CP NGÀY 12 THÁNG 9 NĂM 2018 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ HÓA ĐƠN ĐIỆN TỬ KHI BÁN HÀNG HÓA, CUNG CẤP DỊCH VỤ"
+    }
+   ]
+  },
+  {
+   "question_id": "113678",
+   "question": "Doanh nghiệp chế xuất chọn hình thức chuyển mục đích sử dụng khi bán hàng hóa vào nội địa thì cần xuất hóa đơn không?",
+   "gold": "161768",
+   "gold_count": 3,
+   "candidate_rank": 10,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 7,
+   "gold_title": "219/2013/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH LUẬT THUẾ GIÁ TRỊ GIA TĂNG VÀ NGHỊ ĐỊNH SỐ 209/2013/NĐ-CP NGÀY 18/12/2013 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU LUẬT THUẾ GIÁ TRỊ GIA TĂNG",
+   "predicted": [
+    {
+     "id": "231881",
+     "title": "Nghi dinh 123 2020 ND CP quy dinh hoa don chung tu 445980 | 123/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ HÓA ĐƠN, CHỨNG TỪ"
+    },
+    {
+     "id": "271167",
+     "title": "Thong tu 39 2014 TT BTC huong dan 51 2010 ND CP 04 2014 ND CP hoa don ban hang hoa dich vu 229190 | 39/2014/TT-BTC | THÔNG TƯ HƯỚNG DẪN THI HÀNH NGHỊ ĐỊNH SỐ 51/2010/NĐ-CP NGÀY 14 THÁNG 5 NĂM 2010 VÀ NGHỊ ĐỊNH SỐ 04/2014/NĐ-CP NGÀY 17 THÁNG 01 NĂM 2014 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ HÓA ĐƠN BÁN HÀNG HÓA, CUNG ỨNG DỊCH VỤ"
+    },
+    {
+     "id": "177389",
+     "title": "Thong tu 39 2018 TT BTC sua doi Thong tu 38 2015 TT BTC kiem tra giam sat hai quan 342345 | 39/2018/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU TẠI THÔNG TƯ SỐ 38/2015/TT-BTC NGÀY 25 THÁNG 3 NĂM 2015 CỦA BỘ TRƯỞNG BỘ TÀI CHÍNH QUY ĐỊNH VỀ THỦ TỤC HẢI QUAN; KIỂM TRA, GIÁM SÁT HẢI QUAN; THUẾ XUẤT KHẨU, THUẾ NHẬP KHẨU VÀ QUẢN LÝ THUẾ ĐỐI VỚI HÀNG HÓA XUẤT KHẨU, NHẬP KHẨU"
+    },
+    {
+     "id": "243954",
+     "title": "Thong tu 119 2014 TT BTC sua doi cac thong tu de cai cach don gian thu tuc hanh chinh ve thue 246608 | 119/2014/TT-BTC | THÔNG TƯ SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA THÔNG TƯ SỐ 156/2013/TT-BTC NGÀY 06/11/2013, THÔNG TƯ SỐ 111/2013/TT-BTC NGÀY 15/8/2013, THÔNG TƯ SỐ 219/2013/TT-BTC NGÀY 31/12/2013, THÔNG TƯ SỐ 08/2013/TT-BTC NGÀY 10/01/2013, THÔNG TƯ SỐ 85/2011/TT-BTC NGÀY 17/6/2011,­­ THÔNG TƯ SỐ 39/2014/TT-BTC NGÀY 31/3/2014 VÀ THÔNG TƯ SỐ 78/2014/TT-BTC NGÀY 18/6/2014 CỦA BỘ TÀI CHÍNH ĐỂ CẢI CÁCH,"
+    },
+    {
+     "id": "216984",
+     "title": "Thong tu 68 2019 TT BTC huong dan thuc hien Nghi dinh 119 2018 ND CP ve hoa don dien tu 405141 | 68/2019/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 119/2018/NĐ-CP NGÀY 12 THÁNG 9 NĂM 2018 CỦA CHÍNH PHỦ QUY ĐỊNH VỀ HÓA ĐƠN ĐIỆN TỬ KHI BÁN HÀNG HÓA, CUNG CẤP DỊCH VỤ"
+    }
+   ]
+  },
+  {
+   "question_id": "122730",
+   "question": "Cá nhân muốn trở thành Thanh tra viên cao cấp ngành khoa học và công nghệ cần đảm bảo được những tiêu chuẩn gì?",
+   "gold": "193936",
+   "gold_count": 3,
+   "candidate_rank": 55,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 4,
+   "gold_title": "Luat thanh tra 2010 115311 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "8576",
+     "title": "Thong tu 24 2015 TT BKHCN cong chuc thanh tra cong tac vien thanh tra nganh khoa hoc cong nghe 29804 | 24/2015/TT-BKHCN | THÔNG TƯ QUY ĐỊNH VỀ THANH TRA VIÊN, CÔNG CHỨC THANH TRA CHUYÊN NGÀNH VÀ CỘNG TÁC VIÊN THANH TRA NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "35641",
+     "title": "Thong tu lien tich 24 2014 TTLT BKHCN BNV ma so tieu chuan chuc danh nghe nghiep vien chuc khoa hoc | 24/2014/TTLT-BKHCN-BNV | THÔNG TƯ LIÊN TỊCH QUY ĐỊNH MÃ SỐ VÀ TIÊU CHUẨN CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC CHUYÊN NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "36873",
+     "title": "43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "154389",
+     "title": "Thong tu 08 2021 TT BKHCN tieu chuan xet thang hang vien chuc chuyen nganh khoa hoc 499586 | 08/2021/TT-BKHCN | THÔNG TƯ QUY ĐỊNH TIÊU CHUẨN, ĐIỀU KIỆN THI HOẶC XÉT THĂNG HẠNG; NỘI DUNG, HÌNH THỨC VÀ VIỆC XÁC ĐỊNH NGƯỜI TRÚNG TUYỂN TRONG KỲ XÉT THĂNG HẠNG CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC CHUYÊN NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    }
+   ]
+  },
+  {
+   "question_id": "122730",
+   "question": "Cá nhân muốn trở thành Thanh tra viên cao cấp ngành khoa học và công nghệ cần đảm bảo được những tiêu chuẩn gì?",
+   "gold": "236481",
+   "gold_count": 3,
+   "candidate_rank": 6,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 0,
+   "gold_title": "Nghi dinh 97 2011 ND CP thanh tra vien va cong tac vien thanh tra 130813 | 97/2011/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THANH TRA VIÊN VÀ CỘNG TÁC VIÊN THANH TRA CHÍNH PHỦ",
+   "predicted": [
+    {
+     "id": "8576",
+     "title": "Thong tu 24 2015 TT BKHCN cong chuc thanh tra cong tac vien thanh tra nganh khoa hoc cong nghe 29804 | 24/2015/TT-BKHCN | THÔNG TƯ QUY ĐỊNH VỀ THANH TRA VIÊN, CÔNG CHỨC THANH TRA CHUYÊN NGÀNH VÀ CỘNG TÁC VIÊN THANH TRA NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "42541",
+     "title": "Nghi dinh 43 2023 ND CP huong dan Luat Thanh tra 555032 | 43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "35641",
+     "title": "Thong tu lien tich 24 2014 TTLT BKHCN BNV ma so tieu chuan chuc danh nghe nghiep vien chuc khoa hoc | 24/2014/TTLT-BKHCN-BNV | THÔNG TƯ LIÊN TỊCH QUY ĐỊNH MÃ SỐ VÀ TIÊU CHUẨN CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC CHUYÊN NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    },
+    {
+     "id": "36873",
+     "title": "43/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT THANH TRA"
+    },
+    {
+     "id": "154389",
+     "title": "Thong tu 08 2021 TT BKHCN tieu chuan xet thang hang vien chuc chuyen nganh khoa hoc 499586 | 08/2021/TT-BKHCN | THÔNG TƯ QUY ĐỊNH TIÊU CHUẨN, ĐIỀU KIỆN THI HOẶC XÉT THĂNG HẠNG; NỘI DUNG, HÌNH THỨC VÀ VIỆC XÁC ĐỊNH NGƯỜI TRÚNG TUYỂN TRONG KỲ XÉT THĂNG HẠNG CHỨC DANH NGHỀ NGHIỆP VIÊN CHỨC CHUYÊN NGÀNH KHOA HỌC VÀ CÔNG NGHỆ"
+    }
+   ]
+  },
+  {
+   "question_id": "109002",
+   "question": "Doanh nghiệp có bắt buộc phải bố trí kế toán trưởng hay không?",
+   "gold": "227118",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi dinh 80 2021 ND CP huong dan Luat Ho tro doanh nghiep nho va vua 486147 | 80/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT HỖ TRỢ DOANH NGHIỆP NHỎ VÀ VỪA",
+   "predicted": [
+    {
+     "id": "95164",
+     "title": "Nghi dinh 174 2016 ND CP huong Luat ke toan 336391 | 174/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU CỦA LUẬT KẾ TOÁN"
+    },
+    {
+     "id": "130251",
+     "title": "Luat ke toan 2015 298369 | QUỐC HỘI"
+    },
+    {
+     "id": "42223",
+     "title": "Thong tu 200 2014 TT BTC huong dan Che do ke toan Doanh nghiep 263599 | 200/2014/TT-BTC | THÔNG TƯ HƯỚNG DẪN CHẾ ĐỘ KẾ TOÁN DOANH NGHIỆP"
+    },
+    {
+     "id": "21398",
+     "title": "Luat Doanh nghiep so 59 2020 QH14 427301 | QUỐC HỘI"
+    },
+    {
+     "id": "168520",
+     "title": "Thong tu 132 2018 TT BTC huong dan Che do ke toan cho doanh nghiep sieu nho 401322 | 132/2018/TT-BTC | THÔNG TƯ HƯỚNG DẪN CHẾ ĐỘ KẾ TOÁN CHO DOANH NGHIỆP SIÊU NHỎ"
+    }
+   ]
+  },
+  {
+   "question_id": "101604",
+   "question": "Quy định về hồ sơ, thủ tục xin học lại như thế nào?",
+   "gold": "199759",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 7,
+   "gold_title": "Luat giao duc 2019 367665 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "136279",
+     "title": "Quyet dinh 51 2002 QD BGDDT chuyen truong tiep nhan hoc sinh hoc tai truong trung hoc co so pho thon | 51/2002/QĐ-BGDĐT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH CHUYỂN TRƯỜNG VÀ TIẾP NHẬN HỌC SINH HỌC TẠI CÁC TRƯỜNG TRUNG HỌC CƠ SỞ VÀ TRUNG HỌC PHỔ THÔNG BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO"
+    },
+    {
+     "id": "14929",
+     "title": "Nghi dinh 86 2021 ND CP cong dan Viet Nam ra nuoc ngoai hoc tap giang day nghien cuu khoa hoc 489274 | 86/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VIỆC CÔNG DÂN VIỆT NAM RA NƯỚC NGOÀI HỌC TẬP, GIẢNG DẠY, NGHIÊN CỨU KHOA HỌC VÀ TRAO ĐỔI HỌC THUẬT"
+    },
+    {
+     "id": "245466",
+     "title": "Thong tu 10 2014 TT BGDDT quan ly cong dan Viet Nam hoc tap o nuoc ngoai 227397 | 10/2014/TT-BGDĐT | THÔNG TƯ BAN HÀNH QUY CHẾ QUẢN LÝ CÔNG DÂN VIỆT NAM HỌC TẬP Ở NƯỚC NGOÀI"
+    },
+    {
+     "id": "179734",
+     "title": "Nghi dinh 81 2021 ND CP quan ly hoc phi doi voi co so giao duc thuoc he thong giao duc quoc dan 4573 | 81/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ CƠ CHẾ THU, QUẢN LÝ HỌC PHÍ ĐỐI VỚI CƠ SỞ GIÁO DỤC THUỘC HỆ THỐNG GIÁO DỤC QUỐC DÂN VÀ CHÍNH SÁCH MIỄN, GIẢM HỌC PHÍ, HỖ TRỢ CHI PHÍ HỌC TẬP; GIÁ DỊCH VỤ TRONG LĨNH VỰC GIÁO DỤC, ĐÀO TẠO"
+    },
+    {
+     "id": "8854",
+     "title": "Nghi dinh 140 2021 ND CP che do ap dung xu ly hanh chinh dua vao truong giao duong 482324 | 140/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHẾ ĐỘ ÁP DỤNG BIỆN PHÁP XỬ LÝ HÀNH CHÍNH ĐƯA VÀO TRƯỜNG GIÁO DƯỠNG VÀ CƠ SỞ GIÁO DỤC BẮT BUỘC"
+    }
+   ]
+  },
+  {
+   "question_id": "69922",
+   "question": "Người phát ngôn và cung cấp thông tin cho báo chí có trách nhiệm phát ngôn và cung cấp thông tin trong các trường hợp đột xuất nào?",
+   "gold": "122924",
+   "gold_count": 1,
+   "candidate_rank": 15,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Quyet dinh 130 QD BXD Quy che phat ngon cung cap thong tin cho bao chi 2017 344285 | 130/QĐ-BXD | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA BỘ XÂY DỰNG BỘ TRƯỞNG BỘ XÂY DỰNG",
+   "predicted": [
+    {
+     "id": "182256",
+     "title": "Nghi dinh 09 2017 ND CP phat ngon cung cap thong tin cho bao chi cua cac co quan hanh chinh nha nuoc | 09/2017/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VIỆC PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA CÁC CƠ QUAN HÀNH CHÍNH NHÀ NƯỚC"
+    },
+    {
+     "id": "259711",
+     "title": "543/QĐ-UBDT | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA ỦY BAN DÂN TỘC BỘ TRƯỞNG, CHỦ NHIỆM ỦY BAN DÂN TỘC"
+    },
+    {
+     "id": "216303",
+     "title": "Quyet dinh 388 QD BKHDT Quy che phat ngon cung cap thong tin cho bao chi 2017 345556 | 388/QĐ-BKHĐT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY CHẾ PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA BỘ KẾ HOẠCH VÀ ĐẦU TƯ BỘ TRƯỞNG BỘ KẾ HOẠCH VÀ ĐẦU TƯ"
+    },
+    {
+     "id": "213728",
+     "title": "Quyet dinh 56 QD BYT 2023 Quy che phat ngon va cung cap thong tin cho bao chi cua Bo Y te 550646 | 56/QĐ-BYT | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA BỘ Y TẾ BỘ TRƯỞNG BỘ Y TẾ"
+    },
+    {
+     "id": "8535",
+     "title": "Quyet dinh 562 QD BVHTTDL 2023 Quy che phat ngon cung cap thong tin cho bao chi 559284 | 562/QĐ-BVHTTDL | QUYẾT ĐỊNH BAN HÀNH QUY CHẾ PHÁT NGÔN VÀ CUNG CẤP THÔNG TIN CHO BÁO CHÍ CỦA BỘ VĂN HÓA, THỂ THAO VÀ DU LỊCH BỘ TRƯỞNG BỘ VĂN HÓA, THỂ THAO VÀ DU LỊCH"
+    }
+   ]
+  },
+  {
+   "question_id": "9940",
+   "question": "Điều kiện của sinh viên và chủ trọ khi tham gia giao dịch về thuê nhà trọ?",
+   "gold": "46918",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 38,
+   "gold_title": "Bo luat to tung dan su 2015 296861 | I NHIỆM VỤ VÀ HIỆU LỰC CỦA BỘ LUẬT TỐ TỤNG DÂN SỰ",
+   "predicted": [
+    {
+     "id": "6411",
+     "title": "Luat Nha o 2014 259721 | QUỐC HỘI"
+    },
+    {
+     "id": "144551",
+     "title": "..../..…/… | DỰ THẢO 2 QUỐC HỘI"
+    },
+    {
+     "id": "81598",
+     "title": "Bo luat dan su 2015 296215 | QUỐC HỘI"
+    },
+    {
+     "id": "141634",
+     "title": "Nghi dinh 99 2015 ND CP huong dan Luat Nha o 294439 | 99/2015/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT NHÀ Ở"
+    },
+    {
+     "id": "282223",
+     "title": "Thong tu 19 2016 TT BXD huong dan 99 2015 ND CP Luat Nha o 297607 | 19/2016/TT-BXD | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ NỘI DUNG CỦA LUẬT NHÀ Ở VÀ NGHỊ ĐỊNH SỐ 99/2015/NĐ-CP NGÀY 20 THÁNG 10 NĂM 2015 CỦA CHÍNH PHỦ QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT NHÀ Ở"
+    }
+   ]
+  },
+  {
+   "question_id": "92078",
+   "question": "Trường hợp quân nhân đào ngũ khi đang thực hiện nghĩa vụ quân sự thì có bị gửi thông báo về địa phương cư trú không?",
+   "gold": "48429",
+   "gold_count": 1,
+   "candidate_rank": 12,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "Thong tu 16 2020 TT BQP ap dung ky luat trinh tu thu tuc thoi hieu thoi han xu ly ky luat 436877 | 16/2020/TT-BQP | THÔNG TƯ QUY ĐỊNH VIỆC ÁP DỤNG CÁC HÌNH THỨC KỶ LUẬT, TRÌNH TỰ, THỦ TỤC, THỜI HIỆU, THỜI HẠN VÀ THẨM QUYỀN XỬ LÝ KỶ LUẬT TRONG BỘ QUỐC PHÒNG",
+   "predicted": [
+    {
+     "id": "54776",
+     "title": "Luat nghia vu quan su 2015 282383 | QUỐC HỘI"
+    },
+    {
+     "id": "81598",
+     "title": "Bo luat dan su 2015 296215 | QUỐC HỘI"
+    },
+    {
+     "id": "178295",
+     "title": "Nghi dinh 13 2016 ND CP dang ky che do cong dan kham kiem tra suc khoe nghia vu quan su 292021 | 13/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH TRÌNH TỰ, THỦ TỤC ĐĂNG KÝ VÀ CHẾ ĐỘ, CHÍNH SÁCH CỦA CÔNG DÂN TRONG THỜI GIAN ĐĂNG KÝ, KHÁM, KIỂM TRA SỨC KHỎE NGHĨA VỤ QUÂN SỰ"
+    },
+    {
+     "id": "297709",
+     "title": "Thong tu 148 2018 TT BQP quy dinh tuyen chon va goi cong dan nhap ngu 396402 | 148/2018/TT-BQP | THÔNG TƯ QUY ĐỊNH TUYỂN CHỌN VÀ GỌI CÔNG DÂN NHẬP NGŨ"
+    },
+    {
+     "id": "72265",
+     "title": "Luat 68 2020 QH14 cu tru 435315 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "85300",
+   "question": "Ai được khai thác và sử dụng cơ sở dữ liệu về thi hành án hình sự?",
+   "gold": "210883",
+   "gold_count": 2,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.5,
+   "training_questions_with_gold": 5,
+   "gold_title": "Luat Bao ve bi mat nha nuoc 2018 337064 | LUẬT BẢO VỆ BÍ MẬT NHÀ NƯỚC",
+   "predicted": [
+    {
+     "id": "112046",
+     "title": "Nghi dinh 59 2020 ND CP co so du lieu ve thi hanh an hinh su 443717 | 59/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CƠ SỞ DỮ LIỆU VỀ THI HÀNH ÁN HÌNH SỰ"
+    },
+    {
+     "id": "68399",
+     "title": "Luat Thi hanh an hinh su 2019 387991 | 41/2019/QH14 LUẬT THI HÀNH ÁN HÌNH SỰ"
+    },
+    {
+     "id": "77455",
+     "title": "Nghi dinh 121 2017 ND CP xay dung quan ly su dung co so du lieu thi hanh tam giu tam giam 366669 | 121/2017/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH XÂY DỰNG, QUẢN LÝ, SỬ DỤNG CƠ SỞ DỮ LIỆU VỀ THI HÀNH TẠM GIỮ, TẠM GIAM"
+    },
+    {
+     "id": "228955",
+     "title": "Thong tu 65 2019 TT BCA thi hanh an hinh su tai cong dong 437031 | 65/2019/TT-BCA | THÔNG TƯ QUY ĐỊNH VỀ THI HÀNH ÁN HÌNH SỰ TẠI CỘNG ĐỒNG"
+    },
+    {
+     "id": "70938",
+     "title": "Nghi dinh 20 2016 ND CP co so du lieu quoc gia ve xu ly vi pham hanh chinh 307664 | 20/2016/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CƠ SỞ DỮ LIỆU QUỐC GIA VỀ XỬ LÝ VI PHẠM HÀNH CHÍNH"
+    }
+   ]
+  },
+  {
+   "question_id": "62952",
+   "question": "Đơn vị thẩm định phải thỏa các yêu cầu nào? ",
+   "gold": "294241",
+   "gold_count": 1,
+   "candidate_rank": 13,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Nghi dinh 06 2022 ND CP giam nhe phat thai khi nha kinh va bao ve tang o don 500104 | 06/2022/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH GIẢM NHẸ PHÁT THẢI KHÍ NHÀ KÍNH VÀ BẢO VỆ TẦNG Ô-DÔN",
+   "predicted": [
+    {
+     "id": "69",
+     "title": "TIÊU CHUẨN QUỐC GIA TCVN ISO/IEC 17020:2012 ISO/IEC 17020:2012 ĐÁNH GIÁ SỰ PHÙ HỢP - YÊU CẦU ĐỐI VỚI HOẠT ĐỘNG CỦA TỔ CHỨC TIẾN HÀNH GIÁM ĐỊNH"
+    },
+    {
+     "id": "106872",
+     "title": "Nghi dinh 25 2020 ND CP huong dan Luat Dau thau lua chon nha dau tu 347400 | 25/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤU THẦU VỀ LỰA CHỌN NHÀ ĐẦU TƯ"
+    },
+    {
+     "id": "195377",
+     "title": "Nghi dinh 63 2014 ND CP huong dan Luat Dau thau ve lua chon nha thau 237481 | 63/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤU THẦU VỀ LỰA CHỌN NHÀ THẦU"
+    },
+    {
+     "id": "88365",
+     "title": "Thong tu 49 2016 TT BTNMT cong tac giam sat kiem tra tham dinh cong trinh san pham dat dai 340782 | 49/2016/TT-BTNMT | THÔNG TƯ QUY ĐỊNH VỀ CÔNG TÁC GIÁM SÁT, KIỂM TRA, THẨM ĐỊNH VÀ NGHIỆM THU CÔNG TRÌNH, SẢN PHẨM TRONG LĨNH VỰC QUẢN LÝ ĐẤT ĐAI"
+    },
+    {
+     "id": "113193",
+     "title": "Nghi dinh 120 2020 ND CP thanh lap to chuc lai giai the don vi su nghiep cong lap 379357 | 120/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ THÀNH LẬP, TỔ CHỨC LẠI, GIẢI THỂ ĐƠN VỊ SỰ NGHIỆP CÔNG LẬP"
+    }
+   ]
+  },
+  {
+   "question_id": "13426",
+   "question": "Máu gà dùng cho việc chẩn đoán bệnh viêm phế quản truyền nhiễm cần được bảo quản ở nhiệt độ bao nhiêu?",
+   "gold": "131890",
+   "gold_count": 1,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "",
+   "predicted": [
+    {
+     "id": "253275",
+     "title": ""
+    },
+    {
+     "id": "223110",
+     "title": "CHÚ THÍCH:"
+    },
+    {
+     "id": "177613",
+     "title": "Thong tu 40 2018 TT BYT quy dinh ve quan ly mau benh pham benh truyen nhiem 369319 | 40/2018/TT-BYT | THÔNG TƯ QUY ĐỊNH VỀ QUẢN LÝ MẪU BỆNH PHẨM BỆNH TRUYỀN NHIỄM"
+    },
+    {
+     "id": "251947",
+     "title": "EMEM / BME (1X)"
+    },
+    {
+     "id": "260684",
+     "title": "RDE RDE"
+    }
+   ]
+  },
+  {
+   "question_id": "12238",
+   "question": "Tạm hoãn thi ielts và nhiều chứng chỉ quốc tế?",
+   "gold": "180968",
+   "gold_count": 1,
+   "candidate_rank": 113,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "Thong tu 11 2022 TT BGDDT lien ket to chuc thi cap chung chi nang luc ngoai ngu 493271 | 11/2022/TT-BGDĐT | THÔNG TƯ QUY ĐỊNH VỀ LIÊN KẾT TỔ CHỨC THI CẤP CHỨNG CHỈ NĂNG LỰC NGOẠI NGỮ CỦA NƯỚC NGOÀI",
+   "predicted": [
+    {
+     "id": "243653",
+     "title": "Quyet dinh 3773 QD BGDDT 2022 lien ket to chuc thi cap chung chi IELTS British Council Hoi dong Anh | 3773/QĐ-BGDĐT | QUYẾT ĐỊNH PHÊ DUYỆT LIÊN KẾT TỔ CHỨC THI CẤP CHỨNG CHỈ TIẾNG ANH IELTS GIỮA CÔNG TY TNHH BRITISH COUNCIL (VIỆT NAM), CÔNG TY TNHH CÔNG NGHỆ GIÁO DỤC ĐÔNG A, CÔNG TY CỔ PHẦN PHÁT TRIỂN GIÁO DỤC VÀ ĐÀO TẠO ODIN, CÔNG TY TNHH UNIVERSITY ACCESS CENTRE VIỆT NAM VÀ HỘI ĐỒNG ANH (VƯƠNG QUỐC ANH) BỘ"
+    },
+    {
+     "id": "110",
+     "title": "Quyet dinh 3730 QD BGDDT 2022 lien ket to chuc thi cap chung chi tieng Anh IELTS 539133 | 3730/QĐ-BGDĐT | QUYẾT ĐỊNH PHÊ DUYỆT LIÊN KẾT TỔ CHỨC THI CẤP CHỨNG CHỈ TIẾNG ANH IELTS GIỮA CÔNG TY TNHH GIÁO DỤC IDP (VIỆT NAM) VÀ IELTS AUSTRALIA PTY LTD (AUSTRALIA) BỘ TRƯỞNG BỘ GIÁO DỤC VÀ ĐÀO TẠO"
+    },
+    {
+     "id": "273533",
+     "title": "Quyet dinh 436 QD BGDDT 2023 dieu chinh lien ket thi cap chung chi tieng Anh IELTS 554653 | 436/QĐ-BGDĐT | QUYẾT ĐỊNH ĐIỀU CHỈNH LIÊN KẾT TỔ CHỨC THI CẤP CHỨNG CHỈ TIẾNG ANH IELTS GIỮA CÔNG TY TNHH BRITISH COUNCIL (VIỆT NAM), CÔNG TY CÔNG NGHỆ GIÁO DỤC ĐÔNG A, CÔNG TY TNHH UNIVERSITY ACCESS CENTRE VIỆT NAM, CÔNG TY CỔ PHẦN PHÁT TRIỂN GIÁO DỤC VÀ ĐÀO TẠO ODIN VÀ HỘI ĐỒNG ANH (VƯƠNG QUỐC ANH) BỘ TRƯỞNG"
+    },
+    {
+     "id": "161848",
+     "title": "Cong uoc Vien Luat Dieu uoc quoc te 23 05 1969 27 01 1980 86933 | CÔNG ƯỚC VIÊN VỀ LUẬT ĐIỀU ƯỚC QUỐC TẾ"
+    },
+    {
+     "id": "52666",
+     "title": "Luat Xuat canh nhap canh cua cong dan Viet Nam 2019 402073 | LUẬT XUẤT CẢNH, NHẬP CẢNH CỦA CÔNG DÂN VIỆT NAM"
+    }
+   ]
+  },
+  {
+   "question_id": "55508",
+   "question": "Chủ nhiệm chuyên trách trong UBKT các cấp thuộc Đảng bộ Quân đội được hưởng phụ cấp trách nhiệm thế nào?",
+   "gold": "41395",
+   "gold_count": 3,
+   "candidate_rank": 102,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 6,
+   "gold_title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG",
+   "predicted": [
+    {
+     "id": "294817",
+     "title": "Thong tu 137 2008 TT BQP che do phu cap trach nhiem can bo chuyen trach lam cong tac kiem tra Dang 2 | 137/2008/TT-BQP | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN CHẾ ĐỘ PHỤ CẤP TRÁCH NHIỆM ĐỐI VỚI CÁN BỘ CHUYÊN TRÁCH LÀM CÔNG TÁC KIỂM TRA ĐẢNG TRONG QUÂN ĐỘI"
+    },
+    {
+     "id": "206982",
+     "title": "Quy dinh 169 QD TW che do phu cap trach nhiem cap uy vien 112773 | 169-QĐ/TW | QUY ĐỊNH VỀ CHẾ ĐỘ PHỤ CẤP TRÁCH NHIỆM ĐỐI VỚI CẤP ỦY VIÊN CÁC CẤP"
+    },
+    {
+     "id": "133897",
+     "title": "Quyet dinh 5692 QD TLD 2022 che do phu cap can bo cong doan cac cap 546715 | 5692/QĐ-TLĐ | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH CHẾ ĐỘ PHỤ CẤP CÁN BỘ CÔNG ĐOÀN CÁC CẤP ĐOÀN CHỦ TỊCH TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM"
+    },
+    {
+     "id": "252586",
+     "title": "Nghi dinh 58 2010 ND CP huong dan Luat Dan quan tu ve 106576 | 58/2010/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT DÂN QUÂN TỰ VỆ CHÍNH PHỦ"
+    },
+    {
+     "id": "56238",
+     "title": "Quyet dinh 3226 QD TLD 2021 ban hanh che do phu cap can bo cong doan 493551 | 3226/QĐ-TLĐ | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH CHẾ ĐỘ PHỤ CẤP CÁN BỘ CÔNG ĐOÀN ĐOÀN CHỦ TỊCH TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM"
+    }
+   ]
+  },
+  {
+   "question_id": "55508",
+   "question": "Chủ nhiệm chuyên trách trong UBKT các cấp thuộc Đảng bộ Quân đội được hưởng phụ cấp trách nhiệm thế nào?",
+   "gold": "43443",
+   "gold_count": 3,
+   "candidate_rank": 156,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 15,
+   "gold_title": "Nghi dinh 38 2019 ND CP muc luong co so doi voi can bo cong chuc vien chuc va luc luong vu trang 403 | 38/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG",
+   "predicted": [
+    {
+     "id": "294817",
+     "title": "Thong tu 137 2008 TT BQP che do phu cap trach nhiem can bo chuyen trach lam cong tac kiem tra Dang 2 | 137/2008/TT-BQP | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN CHẾ ĐỘ PHỤ CẤP TRÁCH NHIỆM ĐỐI VỚI CÁN BỘ CHUYÊN TRÁCH LÀM CÔNG TÁC KIỂM TRA ĐẢNG TRONG QUÂN ĐỘI"
+    },
+    {
+     "id": "206982",
+     "title": "Quy dinh 169 QD TW che do phu cap trach nhiem cap uy vien 112773 | 169-QĐ/TW | QUY ĐỊNH VỀ CHẾ ĐỘ PHỤ CẤP TRÁCH NHIỆM ĐỐI VỚI CẤP ỦY VIÊN CÁC CẤP"
+    },
+    {
+     "id": "133897",
+     "title": "Quyet dinh 5692 QD TLD 2022 che do phu cap can bo cong doan cac cap 546715 | 5692/QĐ-TLĐ | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH CHẾ ĐỘ PHỤ CẤP CÁN BỘ CÔNG ĐOÀN CÁC CẤP ĐOÀN CHỦ TỊCH TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM"
+    },
+    {
+     "id": "252586",
+     "title": "Nghi dinh 58 2010 ND CP huong dan Luat Dan quan tu ve 106576 | 58/2010/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT VÀ HƯỚNG DẪN THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT DÂN QUÂN TỰ VỆ CHÍNH PHỦ"
+    },
+    {
+     "id": "56238",
+     "title": "Quyet dinh 3226 QD TLD 2021 ban hanh che do phu cap can bo cong doan 493551 | 3226/QĐ-TLĐ | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH QUY ĐỊNH CHẾ ĐỘ PHỤ CẤP CÁN BỘ CÔNG ĐOÀN ĐOÀN CHỦ TỊCH TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM"
+    }
+   ]
+  },
+  {
+   "question_id": "98634",
+   "question": "Nhà nước thu hồi đất trong những trường hợp nào?",
+   "gold": "257129",
+   "gold_count": 3,
+   "candidate_rank": 5,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 2,
+   "gold_title": "Nghi dinh 01 2017 ND CP sua doi nghi dinh huong dan Luat dat dai 337031 | 01/2017/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT ĐẤT ĐAI",
+   "predicted": [
+    {
+     "id": "305455",
+     "title": "Luat dat dai 2013 215836 | QUỐC HỘI"
+    },
+    {
+     "id": "67945",
+     "title": "Luat Dat dai 2003 13 2003 QH11 51685 | 13/2003/QH11 | LUẬT SỐ13/2003/QH11 CỦA QUỐC HỘI NƯỚC | VỀ ĐẤT ĐAI"
+    },
+    {
+     "id": "59149",
+     "title": "Nghi dinh 181 2004 ND CP thi hanh Luat Dat dai 52514 | 181/2004/NĐ-CP | NGHỊ ĐỊNH VỀ THI HÀNH LUẬT ĐẤT ĐAI CHÍNH PHỦ"
+    },
+    {
+     "id": "113741",
+     "title": "Nghi dinh 43 2014 ND CP huong dan thi hanh Luat Dat dai 230680 | 43/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI"
+    },
+    {
+     "id": "93948",
+     "title": "Nghi dinh 47 2014 ND CP boi thuong ho tro tai dinh cu khi Nha nuoc thu hoi dat 230624 | 47/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH VỀ BỒI THƯỜNG, HỖ TRỢ, TÁI ĐỊNH CƯ KHI NHÀ NƯỚC THU HỒI ĐẤT"
+    }
+   ]
+  },
+  {
+   "question_id": "5768",
+   "question": "Phương pháp RT PCR để chẩn đoán bệnh còi ở tôm được thực hiện dựa trên nguyên tắc nào?",
+   "gold": "114538",
+   "gold_count": 1,
+   "candidate_rank": 17,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 1,
+   "gold_title": "MBV 1.4F 5'-CGA- TTC-CAT-ATC-GGC-CGA-ATA-3' MBV 1.4R 5'-TTG-GCA-TGC-ACT-CCC-TGA-GAT-3' MBV 1.4NF 5'-TCC-AAT-CGC-GTC-TGC-GAT-ACT-3' MBV 1.4NR 5'-CGC-TAA-TGG-GGC-ACA-AGT-CTC-3'",
+   "predicted": [
+    {
+     "id": "94960",
+     "title": "RT PCR RT PCR 50 °C-30"
+    },
+    {
+     "id": "19554",
+     "title": "SVC F1 5’-TCT-TGG-AGC-CAA-ATA-GCT-CAR*-R*TC-3’ 714 SVC R2 5’-AGA-TGG-TAT-GGA-CCC-CAA-TAC-ATH*-ACN*-CAY*-3’ SVC F1 5’-TCT-TGG-AGC-CAA-ATA-GCT-CAR*-R*TC-3’ 606 SVC R4 5’-CTG-GGG-TTT-CCN*-CCT-CAA-AGY*-TGY*-3’ CHÚ THÍCH:"
+    },
+    {
+     "id": "177440",
+     "title": "Thong tu 04 2016 TT BNNPTNT phong chong benh dong vat thuy san 310964 | 04/2016/TT-BNNPTNT | THÔNG TƯ QUY ĐỊNH VỀ PHÒNG, CHỐNG DỊCH BỆNH ĐỘNG VẬT THỦY SẢN"
+    },
+    {
+     "id": "268683",
+     "title": "10F 5’-CCG-CTA-ATT-TCA-AAA-ACT-ACG-3’ 135 144R 5’-AAG-GTG-TTA-TGT-CGA-GGA-AGT-3’ C.2"
+    },
+    {
+     "id": "178654",
+     "title": "Thong tu 283 2016 TT BTC khung gia dich vu tiem phong tieu doc khu trung cho dong vat chan doan thu | 283/2016/TT-BTC | THÔNG TƯ QUY ĐỊNH KHUNG GIÁ DỊCH VỤ TIÊM PHÒNG, TIÊU ĐỘC, KHỬ TRÙNG CHO ĐỘNG VẬT, CHẨN ĐOÁN THÚ Y VÀ DỊCH VỤ KIỂM NGHIỆM THUỐC DÙNG CHO ĐỘNG VẬT"
+    }
+   ]
+  },
+  {
+   "question_id": "117450",
+   "question": "Khi sử dụng đất trồng lúa để xây dựng nhà mồ cho cả dòng họ thì cần lưu ý những vấn đề gì?",
+   "gold": "33669",
+   "gold_count": 1,
+   "candidate_rank": 72,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 3,
+   "gold_title": "Nghi dinh 23 2016 ND CP xay dung quan ly su dung nghia trang co so hoa tang 308102 | 23/2016/NĐ-CP | NGHỊ ĐỊNH VỀ XÂY DỰNG, QUẢN LÝ, SỬ DỤNG NGHĨA TRANG VÀ CƠ SỞ HỎA TÁNG",
+   "predicted": [
+    {
+     "id": "95134",
+     "title": "Nghi dinh 35 2015 ND CP ve quan ly su dung dat trong lua 271072 | 35/2015/NĐ-CP | NGHỊ ĐỊNH VỀ QUẢN LÝ, SỬ DỤNG ĐẤT TRỒNG LÚA"
+    },
+    {
+     "id": "305455",
+     "title": "Luat dat dai 2013 215836 | QUỐC HỘI"
+    },
+    {
+     "id": "108670",
+     "title": "Luat Trong trot 2018 336355 | QUỐC HỘI"
+    },
+    {
+     "id": "67945",
+     "title": "Luat Dat dai 2003 13 2003 QH11 51685 | 13/2003/QH11 | LUẬT SỐ13/2003/QH11 CỦA QUỐC HỘI NƯỚC | VỀ ĐẤT ĐAI"
+    },
+    {
+     "id": "185188",
+     "title": "Thong tu 18 2016 TT BTC huong dan thuc hien quan ly su dung dat trong lua 302090 | 18/2016/TT-BTC | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỘT SỐ ĐIỀU CỦA NGHỊ ĐỊNH SỐ 35/2015/NĐ-CP NGÀY 13 THÁNG 04 NĂM 2015 CỦA CHÍNH PHỦ VỀ QUẢN LÝ, SỬ DỤNG ĐẤT TRỒNG LÚA"
+    }
+   ]
+  },
+  {
+   "question_id": "128348",
+   "question": "Chỉ huy trưởng có được quản lý đồng thời nhiều công trình?",
+   "gold": "89392",
+   "gold_count": 1,
+   "candidate_rank": 11,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 19,
+   "gold_title": "Luat Xay dung 2014 238644 | 50/2014/QH13 | QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "42262",
+     "title": "Nghi dinh 15 2021 ND CP huong dan mot so noi dung quan ly du an dau tu xay dung 466771 | 15/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ NỘI DUNG VỀ QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG"
+    },
+    {
+     "id": "104132",
+     "title": "Nghi dinh 06 2021 ND CP huong dan quan ly chat luong thi cong xay dung va bao tri cong trinh xay dun | 06/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ NỘI DUNG VỀ QUẢN LÝ CHẤT LƯỢNG, THI CÔNG XÂY DỰNG VÀ BẢO TRÌ CÔNG TRÌNH XÂY DỰNG"
+    },
+    {
+     "id": "178412",
+     "title": "Nghi dinh 12 2009 ND CP quan ly du an dau tu xay dung cong trinh 85068 | 12/2009/NĐ-CP | NGHỊ ĐỊNH VỀ QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG CÔNG TRÌNH CHÍNH PHỦ"
+    },
+    {
+     "id": "294152",
+     "title": "Nghi dinh 59 2015 ND CP quan ly du an dau tu xay dung 278744 | 59/2015/NĐ-CP | NGHỊ ĐỊNH VỀ QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG"
+    },
+    {
+     "id": "111391",
+     "title": "Nghi dinh 100 2018 ND CP sua doi quy dinh ve dieu kien dau tu kinh doanh trong quan ly nha nuoc 3683 | 100/2018/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG, BÃI BỎ MỘT SỐ QUY ĐỊNH VỀ ĐIỀU KIỆN ĐẦU TƯ KINH DOANH THUỘC CÁC LĨNH VỰC QUẢN LÝ NHÀ NƯỚC CỦA BỘ XÂY DỰNG"
+    }
+   ]
+  },
+  {
+   "question_id": "45330",
+   "question": "Bệnh nấm phổi do Aspergillus gây ra ở gà có phải là bệnh truyền nhiễm hay không?",
+   "gold": "290469",
+   "gold_count": 1,
+   "candidate_rank": 31,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 0,
+   "gold_title": "",
+   "predicted": [
+    {
+     "id": "36009",
+     "title": "Luat phong chong benh truyen nhiem 2007 03 2007 QH12 59650 | 03/2007/QH12 | LUẬT PHÒNG, CHỐNG BỆNH TRUYỀN NHIỄM"
+    },
+    {
+     "id": "164898",
+     "title": "Quyet dinh 1832 QD BYT 2022 tai lieu huong dan chan doan dieu tri benh ly huyet hoc 520596 | 1832/QĐ-BYT | QUYẾT ĐỊNH VỀ VIỆC BAN HÀNH TÀI LIỆU CHUYÊN MÔN “HƯỚNG DẪN CHẨN ĐOÁN VÀ ĐIỀU TRỊ MỘT SỐ BỆNH LÝ HUYẾT HỌC” BỘ TRƯỞNG BỘ Y TẾ"
+    },
+    {
+     "id": "129920",
+     "title": "Luat thu y 2015 282384 | QUỐC HỘI"
+    },
+    {
+     "id": "239885",
+     "title": "Thong tu 54 2015 TT BYT che do thong tin bao cao va khai bao benh dich benh truyen nhiem 299842 | 54/2015/TT-BYT | THÔNG TƯ HƯỚNG DẪN CHẾ ĐỘ THÔNG TIN BÁO CÁO VÀ KHAI BÁO BỆNH, DỊCH BỆNH TRUYỀN NHIỄM"
+    },
+    {
+     "id": "292078",
+     "title": "17/2019/TT-BYT | THÔNG TƯ HƯỚNG DẪN GIÁM SÁT VÀ ĐÁP ỨNG VỚI BỆNH, DỊCH BỆNH TRUYỀN NHIỄM"
+    }
+   ]
+  },
+  {
+   "question_id": "102328",
+   "question": "Hồ sơ mời thầu thi công về phòng cháy, chữa cháy có bao gồm yêu cầu nhà thầu tham gia phải có chứng chỉ thi công và phòng cháy chữa cháy không?",
+   "gold": "42262",
+   "gold_count": 1,
+   "candidate_rank": 9,
+   "was_reranked": true,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 20,
+   "gold_title": "Nghi dinh 15 2021 ND CP huong dan mot so noi dung quan ly du an dau tu xay dung 466771 | 15/2021/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ NỘI DUNG VỀ QUẢN LÝ DỰ ÁN ĐẦU TƯ XÂY DỰNG",
+   "predicted": [
+    {
+     "id": "144566",
+     "title": "Nghi dinh 136 2020 ND CP huong dan Luat Phong chay va chua chay 458292 | 136/2020/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT MỘT SỐ ĐIỀU VÀ BIỆN PHÁP THI HÀNH LUẬT PHÒNG CHÁY VÀ CHỮA CHÁY VÀ LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT PHÒNG CHÁY VÀ CHỮA CHÁY"
+    },
+    {
+     "id": "93436",
+     "title": "Nghi dinh 79 2014 ND CP huong dan Luat Phong chua chay va Luat Phong hua chay sua doi 241914 | 79/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT PHÒNG CHÁY VÀ CHỮA CHÁY VÀ LUẬT SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT PHÒNG CHÁY VÀ CHỮA CHÁY"
+    },
+    {
+     "id": "201681",
+     "title": "Luat dau thau 2013 215838 | QUỐC HỘI"
+    },
+    {
+     "id": "16570",
+     "title": "Nghi dinh 95 2020 ND CP thuc hien dau thau mua sam theo Hiep dinh Doi tac xuyen Thai Binh Duong 4511 | 95/2020/NĐ-CP | NGHỊ ĐỊNH HƯỚNG DẪN THỰC HIỆN VỀ ĐẤU THẦU MUA SẮM THEO HIỆP ĐỊNH ĐỐI TÁC TOÀN DIỆN VÀ TIẾN BỘ XUYÊN THÁI BÌNH DƯƠNG"
+    },
+    {
+     "id": "195377",
+     "title": "Nghi dinh 63 2014 ND CP huong dan Luat Dau thau ve lua chon nha thau 237481 | 63/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤU THẦU VỀ LỰA CHỌN NHÀ THẦU"
+    }
+   ]
+  },
+  {
+   "question_id": "144324",
+   "question": "Danh mục các khu vực được phép thực hiện phân lô bán nền do cơ quan nào công bố?",
+   "gold": "113741",
+   "gold_count": 1,
+   "candidate_rank": 64,
+   "was_reranked": false,
+   "recall_mass": 1.0,
+   "training_questions_with_gold": 9,
+   "gold_title": "Nghi dinh 43 2014 ND CP huong dan thi hanh Luat Dat dai 230680 | 43/2014/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI",
+   "predicted": [
+    {
+     "id": "90572",
+     "title": "Nghi dinh 148 2020 ND CP sua doi mot so Nghi dinh huong dan Luat Dat dai 427504 | 148/2020/NĐ-CP | NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT ĐẤT ĐAI"
+    },
+    {
+     "id": "29972",
+     "title": "Quyet dinh 15 2020 QD UBND han muc cong nhan quyen su dung dat tinh Quang Nam 468543 | 15/2020/QĐ-UBND | QUYẾT ĐỊNH BAN HÀNH QUY ĐỊNH HẠN MỨC GIAO, HẠN MỨC CÔNG NHẬN QUYỀN SỬ DỤNG ĐẤT VÀ DIỆN TÍCH TỐI THIỂU ĐƯỢC TÁCH THỬA ĐỐI VỚI CÁC LOẠI ĐẤT TRÊN ĐỊA BÀN TỈNH QUẢNG NAM ỦY BAN NHÂN DÂN TỈNH QUẢNG NAM"
+    },
+    {
+     "id": "296685",
+     "title": "Quyet dinh 07 2022 QD UBND han muc dien tich dat toi thieu duoc tach thua Dak Lak 502550 | 07/2022/QĐ-UBND | QUYẾT ĐỊNH BAN HÀNH QUY ĐỊNH HẠN MỨC MỘT SỐ LOẠI ĐẤT; KÍCH THƯỚC, DIỆN TÍCH ĐẤT TỐI THIỂU ĐƯỢC PHÉP TÁCH THỬA CHO HỘ GIA ĐÌNH, CÁ NHÂN; VIỆC RÀ SOÁT, CÔNG BỐ CÔNG KHAI CÁC THỬA ĐẤT NHỎ HẸP DO NHÀ NƯỚC TRỰC TIẾP QUẢN LÝ TRÊN ĐỊA BÀN TỈNH ĐẮK LẮK ỦY BAN NHÂN DÂN TỈNH ĐẮK"
+    },
+    {
+     "id": "171772",
+     "title": "Nghi dinh 44 2022 ND CP xay dung quan ly he thong thong tin nha o thi truong bat dong san 519948 | 44/2022/NĐ-CP | NGHỊ ĐỊNH VỀ XÂY DỰNG, QUẢN LÝ VÀ SỬ DỤNG HỆ THỐNG THÔNG TIN VỀ NHÀ Ở VÀ THỊ TRƯỜNG BẤT ĐỘNG SẢN"
+    },
+    {
+     "id": "242106",
+     "title": "Quyet dinh 26 2021 QD UBND dien tich toi thieu duoc tach thua doi voi tung loai dat Tra Vinh 499058 | 26/2021/QĐ-UBND | QUYẾT ĐỊNH QUY ĐỊNH ĐIỀU KIỆN TÁCH THỬA, HỢP THỬA ĐẤT VÀ DIỆN TÍCH TỐI THIỂU ĐƯỢC TÁCH THỬA ĐỐI VỚI TỪNG LOẠI ĐẤT TRÊN ĐỊA BÀN TỈNH TRÀ VINH ỦY BAN NHÂN DÂN TỈNH TRÀ VINH"
+    }
+   ]
+  },
+  {
+   "question_id": "112128",
+   "question": "Mức lương của cán bộ công chức cấp huyện loại A1 hiện nay là bao nhiêu?",
+   "gold": "15331",
+   "gold_count": 3,
+   "candidate_rank": 27,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 2,
+   "gold_title": "Thong tu 2 2021 TT BNV xep luong doi voi cac ngach cong chuc chuyen nganh hanh chinh 467710 | 2/2021/TT-BNV | THÔNG TƯ QUY ĐỊNH MÃ SỐ, TIÊU CHUẨN CHUYÊN MÔN, NGHIỆP VỤ VÀ XẾP LƯƠNG ĐỐI VỚI CÁC NGẠCH CÔNG CHỨC CHUYÊN NGÀNH HÀNH CHÍNH VÀ CÔNG CHỨC CHUYÊN NGÀNH VĂN THƯ",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "43443",
+     "title": "Nghi dinh 38 2019 ND CP muc luong co so doi voi can bo cong chuc vien chuc va luc luong vu trang 403 | 38/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "166505",
+     "title": "204/2004/NĐ-CP | NGHỊ ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG. CHÍNH PHỦ"
+    },
+    {
+     "id": "52519",
+     "title": "Quyet dinh 128 QD TW che do tien luong can bo cong chuc 115171 | 128-QĐ/TW | QUYẾT ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC CƠ QUAN ĐẢNG, MẶT TRẬN VÀ CÁC ĐOÀN THỂ TRƯỞNG BAN CHỈ ĐẠO TIỀN LƯƠNG NHÀ NƯỚC"
+    },
+    {
+     "id": "220359",
+     "title": "Luat can bo cong chuc 2008 22 2008 QH12 82202 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "112128",
+   "question": "Mức lương của cán bộ công chức cấp huyện loại A1 hiện nay là bao nhiêu?",
+   "gold": "212531",
+   "gold_count": 3,
+   "candidate_rank": null,
+   "was_reranked": false,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 0,
+   "gold_title": "Nghi dinh 203 2004 ND CP muc luong toi thieu chung 52628 | 203/2004/NĐ-CP | NGHỊ ĐỊNH CỦA CHÍNH PHỦ SỐ 203/2004/NĐ-CP NGÀY 14 THÁNG 12 NĂM 2004 QUY ĐỊNH MỨC LƯƠNG TỐI THIỂU CHÍNH PHỦ",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "43443",
+     "title": "Nghi dinh 38 2019 ND CP muc luong co so doi voi can bo cong chuc vien chuc va luc luong vu trang 403 | 38/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "166505",
+     "title": "204/2004/NĐ-CP | NGHỊ ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG. CHÍNH PHỦ"
+    },
+    {
+     "id": "52519",
+     "title": "Quyet dinh 128 QD TW che do tien luong can bo cong chuc 115171 | 128-QĐ/TW | QUYẾT ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC CƠ QUAN ĐẢNG, MẶT TRẬN VÀ CÁC ĐOÀN THỂ TRƯỞNG BAN CHỈ ĐẠO TIỀN LƯƠNG NHÀ NƯỚC"
+    },
+    {
+     "id": "220359",
+     "title": "Luat can bo cong chuc 2008 22 2008 QH12 82202 | QUỐC HỘI"
+    }
+   ]
+  },
+  {
+   "question_id": "156428",
+   "question": "Tỷ lệ tăng lương cơ sở là bao nhiêu?",
+   "gold": "284539",
+   "gold_count": 3,
+   "candidate_rank": 17,
+   "was_reranked": true,
+   "recall_mass": 0.3333333333333333,
+   "training_questions_with_gold": 5,
+   "gold_title": "Nghi quyet 69 2022 QH15 du toan ngan sach nha nuoc 2023 541860 | NGHỊ QUYẾT VỀ DỰ TOÁN NGÂN SÁCH NHÀ NƯỚC NĂM 2023 QUỐC HỘI",
+   "predicted": [
+    {
+     "id": "41395",
+     "title": "Nghi dinh 24 2023 ND CP muc luong co so can bo cong vien chuc luc luong vu trang 432518 | 24/2023/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "43443",
+     "title": "Nghi dinh 38 2019 ND CP muc luong co so doi voi can bo cong chuc vien chuc va luc luong vu trang 403 | 38/2019/NĐ-CP | NGHỊ ĐỊNH QUY ĐỊNH MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG"
+    },
+    {
+     "id": "23402",
+     "title": "QUỐC HỘI"
+    },
+    {
+     "id": "93496",
+     "title": "41/2023/TT-BQP | THÔNG TƯ HƯỚNG DẪN THỰC HIỆN MỨC LƯƠNG CƠ SỞ ĐỐI VỚI CÁC ĐỐI TƯỢNG ĐANG HƯỞNG LƯƠNG HOẶC PHỤ CẤP QUÂN HÀM TỪ NGÂN SÁCH NHÀ NƯỚC TRONG CÁC CƠ QUAN, ĐƠN VỊ THUỘC BỘ QUỐC PHÒNG"
+    },
+    {
+     "id": "166505",
+     "title": "204/2004/NĐ-CP | NGHỊ ĐỊNH VỀ CHẾ ĐỘ TIỀN LƯƠNG ĐỐI VỚI CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC VÀ LỰC LƯỢNG VŨ TRANG. CHÍNH PHỦ"
+    }
+   ]
+  }
+ ],
+ "comparisons": {
+  "v2-bi-tuned.diagnostics": {
+   "recall": 0.9333333333333332,
+   "delta_vs_stacked": -0.012063492063492063,
+   "wins": 5,
+   "losses": 21,
+   "equal_recall": 1024,
+   "ordered_top5_changed": 981,
+   "top5_membership_changed": 819,
+   "paired_standard_error": 0.003955823586553369,
+   "sign_test_p": 0.002493917942047119
+  },
+  "v2-ce-tuned.diagnostics": {
+   "recall": 0.9169841269841269,
+   "delta_vs_stacked": -0.02841269841269841,
+   "wins": 10,
+   "losses": 43,
+   "equal_recall": 997,
+   "ordered_top5_changed": 1025,
+   "top5_membership_changed": 914,
+   "paired_standard_error": 0.005822966588429155,
+   "sign_test_p": 5.550520889130439e-06
+  },
+  "v2-deep.diagnostics": {
+   "recall": 0.9276190476190476,
+   "delta_vs_stacked": -0.017777777777777778,
+   "wins": 5,
+   "losses": 27,
+   "equal_recall": 1018,
+   "ordered_top5_changed": 984,
+   "top5_membership_changed": 807,
+   "paired_standard_error": 0.004575297673502721,
+   "sign_test_p": 0.00011307420209050179
+  },
+  "v2-dense-ce.diagnostics": {
+   "recall": 0.9242857142857143,
+   "delta_vs_stacked": -0.021111111111111112,
+   "wins": 6,
+   "losses": 33,
+   "equal_recall": 1011,
+   "ordered_top5_changed": 1014,
+   "top5_membership_changed": 892,
+   "paired_standard_error": 0.005087125901086503,
+   "sign_test_p": 1.429926123819314e-05
+  },
+  "v2-ens.diagnostics": {
+   "recall": 0.9365079365079365,
+   "delta_vs_stacked": -0.008888888888888889,
+   "wins": 5,
+   "losses": 17,
+   "equal_recall": 1028,
+   "ordered_top5_changed": 971,
+   "top5_membership_changed": 746,
+   "paired_standard_error": 0.0038737331917941425,
+   "sign_test_p": 0.01690053939819336
+  },
+  "v2-g32.diagnostics": {
+   "recall": 0.937142857142857,
+   "delta_vs_stacked": -0.008253968253968253,
+   "wins": 4,
+   "losses": 15,
+   "equal_recall": 1031,
+   "ordered_top5_changed": 939,
+   "top5_membership_changed": 654,
+   "paired_standard_error": 0.0032677925775278626,
+   "sign_test_p": 0.0192108154296875
+  },
+  "v2-lexical-validation.diagnostics": {
+   "recall": 0.8482539682539683,
+   "delta_vs_stacked": -0.09714285714285714,
+   "wins": 11,
+   "losses": 126,
+   "equal_recall": 913,
+   "ordered_top5_changed": 1044,
+   "top5_membership_changed": 991,
+   "paired_standard_error": 0.009692738198275317,
+   "sign_test_p": 6.647795917854296e-26
+  },
+  "v4-ceiling.diagnostics": {
+   "recall": 0.9349206349206348,
+   "delta_vs_stacked": -0.010476190476190476,
+   "wins": 11,
+   "losses": 25,
+   "equal_recall": 1014,
+   "ordered_top5_changed": 994,
+   "top5_membership_changed": 838,
+   "paired_standard_error": 0.00483732844762394,
+   "sign_test_p": 0.028816719655878842
+  },
+  "v4-multipos.diagnostics": {
+   "recall": 0.933015873015873,
+   "delta_vs_stacked": -0.012380952380952381,
+   "wins": 6,
+   "losses": 22,
+   "equal_recall": 1022,
+   "ordered_top5_changed": 997,
+   "top5_membership_changed": 823,
+   "paired_standard_error": 0.004603192865376816,
+   "sign_test_p": 0.0037191659212112427
+  },
+  "v4-stacked.diagnostics": {
+   "recall": 0.9453968253968253,
+   "delta_vs_stacked": 0.0,
+   "wins": 0,
+   "losses": 0,
+   "equal_recall": 1050,
+   "ordered_top5_changed": 0,
+   "top5_membership_changed": 0,
+   "paired_standard_error": 0.0,
+   "sign_test_p": 1.0
+  },
+  "v4-swept.diagnostics": {
+   "recall": 0.9442857142857143,
+   "delta_vs_stacked": -0.0011111111111111111,
+   "wins": 5,
+   "losses": 7,
+   "equal_recall": 1038,
+   "ordered_top5_changed": 712,
+   "top5_membership_changed": 465,
+   "paired_standard_error": 0.0025849434691100196,
+   "sign_test_p": 0.7744140625
+  }
+ },
+ "local_corpus_metadata_differences": {
+  "corpus_sha256": {
+   "local": "26b9868b35a5c2f0ed0db82fe1e74b12ac977d22e9e41a428a3498f9e81c0e9a",
+   "baseline": "1814667de4f6fcb260f021836e68f275b7920ac2174ab1408c6e40583a51455b"
+  }
+ },
+ "current_id_based_crossfit": {
+  "exact_duplicate_query_groups": 16,
+  "groups_split_across_two_folds": [
+   [
+    "95506",
+    "116298"
+   ],
+   [
+    "27382",
+    "4466"
+   ],
+   [
+    "65158",
+    "156640"
+   ],
+   [
+    "77610",
+    "149338"
+   ],
+   [
+    "58344",
+    "96298"
+   ],
+   [
+    "139536",
+    "55722"
+   ],
+   [
+    "114846",
+    "141262"
+   ],
+   [
+    "19874",
+    "143660"
+   ],
+   [
+    "133550",
+    "13366"
+   ],
+   [
+    "131930",
+    "122700"
+   ]
+  ]
+ },
+ "limitations": [
+  "Public 0.9493 is user-reported; public labels are unavailable.",
+  "No phase-5/6 prediction files, cross-fit score caches or trained reranker weights are present locally.",
+  "Candidate coverage is an oracle upper bound, not a forecast of achievable model quality.",
+  "These are retrospective development diagnostics, not a new blind evaluation.",
+  "Local corpus titles are auxiliary annotations; inspect corpus fingerprint differences before reproducing inference."
+ ]
+}

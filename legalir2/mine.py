@@ -36,7 +36,7 @@ def jaccard(first, second):
 def mine(store_path, lexical_directory, questions_path, output,
          dense_directory=None, embedding_path=None, device="cuda",
          positives=2, negatives=12, depth=100, duplicate_threshold=0.9, seed=2026,
-         lexical_settings=None, limit=None, settings=None):
+         lexical_settings=None, limit=None, settings=None, channel="fused"):
     """Mine training groups through the *inference* candidate path.
 
     The negatives a reranker learns to reject are only useful if they are the
@@ -46,6 +46,17 @@ def mine(store_path, lexical_directory, questions_path, output,
     every number still looks reasonable, the reranker just quietly converts fewer of
     the candidates it is given. So the candidate list here comes from Pipeline,
     reranker unloaded, with the same tuned fusion settings prediction will use.
+
+    `channel` says WHICH inference path the model being trained will actually face,
+    and it is not the same answer for every model.
+
+    A cross encoder reranks the fused shortlist, so "fused" is right for it. The
+    bi-encoder does not: at inference it produces the dense channel's own ranking over
+    the whole corpus, independently, and fusion happens afterwards. Training it against
+    documents the FUSION ranked highly teaches it to separate a distribution it never
+    sees - the same mismatch that cost this project 0.021 on the reranker, one model
+    over. `channel="dense"` tiers negatives on the dense channel's own ranking, so the
+    hard negatives are the documents the bi-encoder itself gets wrong.
     """
     from .pipeline import Pipeline
 
@@ -69,8 +80,16 @@ def mine(store_path, lexical_directory, questions_path, output,
         if not gold:
             stats["skipped"] += 1
             continue
-        fused, prior = pipeline.candidates(question)
-        rank_of = {doc: rank for rank, (doc, _) in enumerate(fused[:depth])}
+        per_channel = {}
+        fused, prior = pipeline.candidates(question, channels=per_channel)
+        # Negatives are tiered on the ranking the trained model will itself produce;
+        # positives and their passages still come from the fused path, because which
+        # passage best represents a gold document is a different question from which
+        # documents are hard negatives.
+        source = per_channel.get(channel) or fused
+        if channel != "fused" and not per_channel.get(channel):
+            stats["empty_channel"] = stats.get("empty_channel", 0) + 1
+        rank_of = {doc: rank for rank, (doc, _) in enumerate(source[:depth])}
         # Fallback only: a gold document fusion never surfaced has no prior, so its
         # best passage is chosen lexically rather than dropping the hardest questions.
         fallback = lexical.chunk_scores(question)
@@ -149,6 +168,10 @@ def mine(store_path, lexical_directory, questions_path, output,
     stream.close()
     pipeline.close()
     stats["seconds"] = round(time.time() - started)
+    stats["positives"] = positives
+    stats["negatives"] = negatives
+    stats["depth"] = depth
+    stats["channel"] = channel
     stats["fusion"] = {k: pipeline.settings[k]
                        for k in ("lexical_weight", "dense_weight", "rrf_constant")}
     stats["dense"] = bool(dense_directory)

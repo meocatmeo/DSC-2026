@@ -19,6 +19,60 @@ RERANK_PREFIX = ('<|im_start|>system\nJudge whether the Document meets the requi
                  'only be "yes" or "no".<|im_end|>\n<|im_start|>user\n')
 RERANK_SUFFIX = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
 
+# Causal rerankers are NOT interchangeable in their prompting, even within one family.
+# Qwen3-Reranker and Prism-Qwen3.5-Reranker share the <|im_start|> scaffolding and both
+# score sigmoid(logit_yes - logit_no) on the first generated token, but their system
+# prompt and instruction differ. Feeding one the other's template does not error - it
+# just returns worse scores, everywhere, silently. That is the most expensive kind of
+# bug this project has hit, so the template travels with the checkpoint.
+TEMPLATES = {
+    "qwen3-reranker": {
+        "system": ('Judge whether the Document meets the requirements based on the Query '
+                   'and the Instruct provided. Note that the answer can only be "yes" or '
+                   '"no".'),
+        "instruction": INSTRUCTION,
+    },
+    "prism": {
+        "system": ("Judge whether the Document meets the requirements based on the Query "
+                   "and the Instruct provided."),
+        "instruction": ('Judge if the document is relevant to the query. Reply "yes" or '
+                        '"no".'),
+    },
+}
+
+
+def template_for(path, config=None):
+    """Which prompt template a causal reranker checkpoint expects.
+
+    Chosen from the checkpoint's recorded repository where possible, falling back to the
+    directory name, because a fine-tuned copy keeps neither the publisher's config nor
+    an obvious name.
+    """
+    import json
+    from pathlib import Path as _Path
+
+    name = str(path).lower()
+    provenance = _Path(path) / "provenance.json"
+    if provenance.is_file():
+        try:
+            record = json.loads(provenance.read_text(encoding="utf-8"))
+            while "derived_from" in record:
+                record = record["derived_from"]
+            name = (record.get("repository") or name).lower()
+        except Exception:
+            pass
+    for key in TEMPLATES:
+        if key in name:
+            return TEMPLATES[key]
+    return TEMPLATES["qwen3-reranker"]
+
+
+def rerank_prompt(template):
+    """(prefix, suffix) for a template, in the shape rerank.py already tokenises."""
+    prefix = (f'<|im_start|>system\n{template["system"]}<|im_end|>\n'
+              f'<|im_start|>user\n')
+    return prefix, RERANK_SUFFIX
+
 
 def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -51,7 +105,13 @@ def checkpoint_identity(provenance):
     if "derived_from" in provenance:
         return {"derived_from": checkpoint_identity(provenance["derived_from"]),
                 "training": provenance.get("training", {}).get("base")}
-    keep = {k: provenance[k] for k in ("repository", "revision", "commit") if k in provenance}
+    # `revision` is deliberately excluded. It records the branch NAME that was asked
+    # for, not the weights: downloading commit abc123 via "main" and via "abc123"
+    # produces byte-identical files and two different provenance records. The commit
+    # sha already pins the weights exactly. Including revision would mean a checkpoint
+    # re-fetched at a pinned sha could never match an index built from "main" - which
+    # is precisely the repair path someone reaches for when provenance goes missing.
+    keep = {k: provenance[k] for k in ("repository", "commit") if k in provenance}
     files = provenance.get("files")
     if files:
         keep["files"] = {name: record.get("sha256") for name, record in sorted(files.items())}
