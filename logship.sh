@@ -38,7 +38,8 @@ exec > >(tee -a "$LOG") 2>&1
 # State goes through a file or the heartbeat reports the run's opening moments forever.
 stage_now() {
   printf 'stage=%s\nstarted=%s\nhost=%s\n' \
-      "$1" "$LOGSHIP_STARTED" "$(hostname)" > "$LOGSHIP_STATE"
+      "$1" "$LOGSHIP_STARTED" "$(hostname)" > "$LOGSHIP_STATE.tmp"
+  mv "$LOGSHIP_STATE.tmp" "$LOGSHIP_STATE"
 }
 stage_now "starting"
 
@@ -51,6 +52,7 @@ ship_logs() {
   {
     printf 'DSC-2026  %s\n' "$LOGSHIP_NAME"
     printf 'host            : %s\n' "$(hostname)"
+    printf 'log             : %s\n' "$(basename "$LOG")"
     printf 'heartbeat (UTC) : %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     printf 'running for     : %s h %s min\n' "$((elapsed / 60))" "$((elapsed % 60))"
     printf 'current stage   : %s\n' "$stage"
@@ -67,7 +69,8 @@ ship_logs() {
   # --ignore-checksum: the log is appended to WHILE it uploads, so its md5 legitimately
   # differs between read and verify. rclone calls that "corrupted on transfer", retries
   # and succeeds - correct, but it buries real errors under hours of false alarms.
-  if ! rclone copy "$ROOT/outputs" "$RESULTS/logs" --ignore-checksum \
+  if ! V11_TRANSFER_TIMEOUT=2m rclone copy "$ROOT/outputs" "$RESULTS/logs" --ignore-checksum --max-depth 1 \
+          --contimeout 20s --timeout 30s --retries 1 --low-level-retries 2 \
           --include "*.log" --include "STATUS.txt" --include "*.stats.json" \
           >>"$LOGSHIP_ERRORS" 2>&1; then
     LOGSHIP_FAILURES=$((LOGSHIP_FAILURES + 1))
@@ -101,13 +104,27 @@ else
   printf '\n  WARNING: rclone is not installed - logs stay local to this box.\n\n'
 fi
 
-( while sleep "$LOG_EVERY"; do ship_logs; done ) &
+(
+  delay=''
+  trap 'if [ -n "$delay" ]; then kill "$delay" 2>/dev/null || true; fi; exit 0' TERM INT
+  while true; do
+    sleep "$LOG_EVERY" & delay=$!
+    wait "$delay" || exit 0
+    delay=''
+    ship_logs || true  # a transient Drive failure must not kill the heartbeat
+  done
+) &
 LOGSHIP_PID=$!
 
 logship_cleanup() {
   local code=$?
-  kill "$LOGSHIP_PID" 2>/dev/null
+  trap - EXIT INT TERM
+  kill "$LOGSHIP_PID" 2>/dev/null || true
+  wait "$LOGSHIP_PID" 2>/dev/null || true
   stage_now "$([ "$code" = 0 ] && echo finished || echo "exited (status $code)")"
-  ship_logs
+  ship_logs || true
+  exit "$code"
 }
-trap logship_cleanup EXIT INT TERM
+trap logship_cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM

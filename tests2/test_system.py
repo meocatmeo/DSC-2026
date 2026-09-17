@@ -295,6 +295,7 @@ class TestRerankerEnsemble(unittest.TestCase):
                             settings=dict({"candidates": 3, "passages": 1}, **(settings or {})))
         pipeline.rerankers = rerankers
         pipeline._passages = lambda doc, prior, count=None: [f"passage of {doc}"]
+        self.addCleanup(pipeline.close)
         return pipeline
 
     def test_single_reranker_decides_the_order(self):

@@ -69,6 +69,42 @@ class Reranker:
             out.extend(logits.cpu().tolist())
         return out
 
+    def score_bundles(self, bundles, batch_size=8):
+        """V11 opt-in: score the exact, already-budgeted prompt IDs in the audit.
+
+        No second tokenization/truncation; the regular v9 score path is unchanged.
+        """
+        from .evidence import SCHEMA
+        if self.head != 'causal':
+            raise ValueError('Evidence bundles require the causal Qwen scoring head')
+        if batch_size < 1:
+            raise ValueError('batch_size must be positive')
+        for bundle in bundles:
+            ids = bundle['input_ids']
+            limit = min(bundle['max_tokens'], self.context_limit or bundle['max_tokens'])
+            if (bundle['schema'] != SCHEMA or len(ids) != bundle['total_tokens'] or
+                    len(ids) > limit or ids[:len(self.prefix)] != self.prefix or
+                    ids[-len(self.suffix):] != self.suffix):
+                raise ValueError('Bundle schema, token budget or scoring template mismatch')
+            instruction = (self.template or {}).get('instruction', INSTRUCTION)
+            text = (f"<Instruct>: {instruction}\n<Query>: {bundle['query']}"
+                    f"\n<Document>: {bundle['document']}")
+            expected = self.prefix + self.local.tokenizer.encode(
+                text, add_special_tokens=False) + self.suffix
+            if ids != expected:
+                raise ValueError('Bundle tokenizer/prompt differs from the loaded model')
+        torch, out = self.local.torch, []
+        for start in range(0, len(bundles), batch_size):
+            batch = bundles[start:start + batch_size]
+            inputs = self.local.tokenizer.pad({'input_ids': [b['input_ids'] for b in batch]},
+                                              padding=True, return_tensors='pt')
+            inputs = {k: v.to(self.local.device) for k, v in inputs.items()}
+            with torch.inference_mode():
+                logits = self.local.model(**inputs, logits_to_keep=1).logits[:, -1, self.labels]
+                probability = logits.float().softmax(dim=1)[:, 1]
+            out.extend(probability.cpu().tolist())
+        return out
+
     def _score_causal(self, query, passages, batch_size, max_length):
         torch = self.local.torch
         budget = max_length - len(self.prefix) - len(self.suffix)

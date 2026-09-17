@@ -17,3 +17,4 @@ rclone.exe
 *.json.credentials
 Claude outputs/
 _results/
+analysis/

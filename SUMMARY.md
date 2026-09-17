@@ -26,9 +26,10 @@
 | v2 | cross-encoder reranker | — | 0.9433 |
 | v4 | 12-feature learned stacker | 0.9454 | 0.9493 |
 | **v9** | **two rerankers, 20-feature stacker** | **0.9464** | **0.9508** |
+| v10 | out-of-fold stacker weights | — | 0.9464 (−0.0044) |
 
-Public has tracked validation twice, at roughly **+0.004**, in both direction and
-magnitude. That is two data points, not a law, but it is the only calibration available.
+Public tracked validation at roughly **+0.004** on v4 and v9. v10 is the first submission
+whose public score moved against the intervention's premise; see §8.
 
 ---
 
@@ -131,6 +132,7 @@ Three conclusions:
 | Public test is multi-gold heavy | **Wrong.** `5×precision − recall` is 0.0766 on validation and 0.0767 on public — identical structure. |
 | More data, base init, deeper negatives (`submission-final`) | **−0.0162.** Four things changed at once; described as "same recipe, more data", and it wasn't. |
 | MMR / diversity bonus | **Unjustified.** Recall is additive over the selected set, so greedy selection is already optimal. |
+| Out-of-fold stacker weights (`v10`) | **−0.0044 public.** Confounded by reranker strength, but it rules out trusting the fusion prior more. §8. |
 
 ---
 
@@ -166,9 +168,13 @@ Two of these were silently inflating or flattening results for most of the proje
 
 ---
 
-## 8. The one experiment still on the table
+## 8. The out-of-fold stacker — run, and it failed
 
-**`gpu-calibrate.sh`** — ~3.8 h, ~$1.40, **odds roughly one in three**.
+> **RESULT: 0.9464 public, −0.0044 against v9.** Reverted. v9 remains the submission.
+> The experiment did not cleanly test its hypothesis — see "the confound" below — but it
+> killed a larger idea than the one it was aimed at.
+
+**`gpu-calibrate.sh`** — ~3.8 h, ~$1.40, called at **odds roughly one in three**.
 
 `v9-stacker-ens.json` was fitted on 2,000 training questions — the same questions
 `reranker-g32` was fine-tuned on. On its own training data a reranker separates gold from
@@ -194,16 +200,38 @@ rerankers are still what gets deployed; only the weights come from out-of-fold d
 | +0.003 | 0.9538 | 7th |
 | +0.004 | 0.9548 | 6th |
 
-**Evidence against.** Phase five measured a cross-fitted stacker at −0.0014. That
-comparison was itself broken — both bugs in §6.1 and §6.2 were live — which is why this
-is an experiment rather than a plan.
+It returned **−0.0044**. Phase five's earlier cross-fitted measurement of −0.0014 — which
+was dismissed because both bugs in §6.1 and §6.2 were live at the time — turns out to
+have had the sign right.
 
-**The readout is not free.** The weight comparison prints after `collect`, which is three
-hours in. There is no cheap early signal.
+### The confound
 
-Stages: `train` (1.6 h) → `collect` (1.4 h) → `fit` (1 min, CPU) → `measure` (45 min) →
-`submit` (40 min). File is at `D:\DSC-2026\gpu-calibrate.sh`, **10,606 bytes** — check the
-size on the box before running; an earlier 10,343-byte copy has the `GROUPS` bug.
+`reranker-foldA` differs from `reranker-g32` in **two** ways, not one. It never saw fold
+B's questions, and it was trained on **half the data**. So it is not merely an honest
+reranker — it is a *weaker* one.
+
+The stacker did what it should: it learned to trust a weaker model less. Those weights
+were then deployed on the full-strength model, which systematically under-weights
+`rr_max` for a reason that has nothing to do with memorisation. That alone predicts the
+drawdown, so the memorisation hypothesis was never isolated.
+
+A clean version would hold reranker strength fixed and vary only what the *stacker* saw —
+k-fold rerankers all trained on the same number of groups, or cross-fitting the stacker
+alone over cached scores from the shipped model. Neither was run, and neither is worth a
+rental now, because of what follows.
+
+### What it killed anyway
+
+The premise behind the 0.0089 "actively destroyed" bucket (§4) was that on those 14
+questions the *fusion* was right and the reranker overrode it — so shifting weight from
+`rr_max` toward `fused_rr` should recover them.
+
+Weight moved that direction and the score fell. Whatever is recovered on those 14
+questions costs more than it gains everywhere else. **That bucket is not reachable by
+re-weighting, and the whole family of shrink-toward-the-fusion-prior ideas goes with it.**
+
+That is a bigger result than the one the experiment was aimed at, and it is the reason to
+stop rather than to iterate.
 
 ---
 
@@ -257,7 +285,11 @@ reranker, not by a new idea. The remaining 0.049 is eighty-six separate hard que
 with no shared structure — twenty never retrieved at all, and at least one
 (`9060`) whose gold document appears nowhere in the 5,950 training questions.
 
-`gpu-calibrate.sh` targets the single largest *addressable* bucket, the 0.0089 that the
-ranking stage actively destroys. It is worth one rental. If it comes back flat, the
-conclusion is that 0.95 is what this corpus and these labels support, and that is itself
-worth writing down.
+Twelve interventions now sit inside **0.945 ± 0.006** on validation. Every mechanism with
+a story behind it has been tested: better retrieval (substitutes, §4), a second reranker
+(the one win, §3), structural metadata (§5), and re-weighting the ranking stage (§8).
+The last of those was the final addressable bucket, and it did not move.
+
+**Stop here.** 0.9508 is what this corpus and these labels support. The gap to the top of
+the board is 0.0083 — smaller than the noise on a single validation comparison — and
+nothing left on the list has honest positive expected value against another rental.
