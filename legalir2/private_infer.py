@@ -89,6 +89,15 @@ def preflight(args):
             raise ValueError(f'Frozen package mismatch: {name}; expected {expected}')
     print('Checking saved model/index/code hashes before private inference.', flush=True)
     assets = verify_assets(args, signature)
+    policy = getattr(args, 'duo_policy', 'original')
+    evidence_marker = {'policy': policy}
+    if policy == 'fulltext-v2':
+        from . import duo_evidence
+        metadata = duo_evidence.index_metadata(args.evidence_index)
+        if metadata['store_sha256'] != assets['artifacts-ranking-h100/store.sqlite']:
+            raise ValueError('Full-text evidence index belongs to another frozen store')
+        evidence_marker.update(index=file_hash(args.evidence_index), metadata=metadata,
+                               code=file_hash(duo_evidence.__file__))
     checkpoint = duo.verify_model(args.duo_run / 'model', signature)
     baseline = read_json(args.baseline / 'v9-ensemble.run.json')
     weights = read_json(args.baseline / 'v9-stacker-ens.json')
@@ -111,6 +120,7 @@ def preflight(args):
               'assets': assets, 'packages': packages, 'code': file_hash(__file__),
               'gpu': torch.cuda.get_device_name(0), 'cuda': torch.version.cuda,
               'parameter_audit': parameter_audit}
+    marker['evidence'] = evidence_marker
     # A different question file/model/backend cannot adopt any existing private shards.
     h100.guard(args.out / 'inputs.json', marker)
     write_json(args.out / 'audit.json', parameter_audit)
@@ -158,6 +168,9 @@ def progress(label, committed, total, computed, started):
 def collect_v9(args, records, signature, marker):
     directory = args.out / 'cache/v9'
     h100.guard(directory / 'resume.json', {'inputs': h100.digest(marker), 'stage': 'v9'})
+    source = getattr(args, 'v9_cache_from', None)
+    if source is not None:
+        import_v9(args, records, signature, marker, source)
     model, result, computed, started = None, [], 0, time.time()
     known = set(signature['known_docs'])
     try:
@@ -177,6 +190,30 @@ def collect_v9(args, records, signature, marker):
         if model is not None:
             model.close()
     return result
+
+
+def import_v9(args, records, signature, marker, source):
+    """Reuse compatible frozen V9 results; never import old duo comparisons."""
+    source = Path(source)
+    if source.resolve() == args.out.resolve():
+        raise ValueError('V9 cache source must be a different run')
+    previous = read_json(source / 'inputs.json')
+    for key in ('schema', 'questions_sha256', 'questions', 'question_ids', 'duo_inputs',
+                'runtime', 'assets', 'packages'):
+        if previous.get(key) is None or previous[key] != marker[key]:
+            raise ValueError(f'Incompatible V9 cache source: {key}')
+    imported = read_v9(SimpleNamespace(out=source, shard_size=previous['shard_size']),
+                       records, signature, previous)
+    for start, items in shard_items(records, args.shard_size):
+        rows = imported[start:start + len(items)]
+        target = args.out / 'cache/v9' / f'part-{start//args.shard_size:05d}.json'
+        if target.exists():
+            if read_json(target) != rows:
+                raise ValueError('Existing V9 shard differs from imported baseline')
+        else:
+            write_json(target, rows)
+    write_json(args.out / 'v9-import.json', {'source': str(source),
+               'inputs_sha256': file_hash(source / 'inputs.json'), 'questions': len(imported)})
 
 
 def read_v9(args, records, signature, marker):
@@ -206,17 +243,25 @@ def collect_duo(args, records, signature, marker):
                 os.environ['LEGALIR_CAUSAL_ATTN'] = signature['attention']
                 local = Local(args.duo_run / 'model', kind='causal', device='cuda')
                 codec = duo.PairTokenizer(local.tokenizer, signature['max_length'])
-                evidence = duo.Evidence(args.index, codec)
+                if getattr(args, 'duo_policy', 'original') == 'fulltext-v2':
+                    from .duo_evidence import Evidence
+                    evidence = Evidence(args.index, codec, args.evidence_index)
+                else:
+                    evidence = duo.Evidence(args.index, codec)
                 memory = QuestionMemory(signature['memory'])
             rows = []
             for qid, record in items:
                 docs, base = duo.pool(old[qid], weights, memory, known)
+                if getattr(args, 'duo_policy', 'original') == 'fulltext-v2':
+                    docs, base = evidence.expand(record['question'], docs, base, known)
                 probabilities = duo.compare_documents(local, codec, record['question'],
                     evidence.encode(record['question'], docs), docs, args.infer_batch)
                 prior, ability = duo.tournament(base, probabilities)
                 rows.append({'id': qid, 'question': record['question'], 'gold': [], 'docs': docs,
                              'prior': prior.tolist(), 'ability': ability.tolist(),
                              'probabilities': probabilities.tolist(), 'baseline': h100.order(old[qid], weights, 1)})
+                if getattr(args, 'duo_policy', 'original') == 'fulltext-v2':
+                    rows[-1]['evidence'] = evidence.trace
             return rows
         for start, items in shard_items(records, args.shard_size):
             rows, fresh = cache_row(directory / f'part-{start//args.shard_size:05d}.json', items,
@@ -254,7 +299,8 @@ def write_submission(args, predictions, label, known, marker):
     write_json(path.with_suffix('.run.json'), {'schema': SCHEMA, 'method': label,
                'inputs': h100.digest(marker), 'questions': len(predictions),
                'questions_sha256': file_hash(args.questions), 'zip_sha256': file_hash(target),
-               'duo_strength': marker['strength'] if label == 'duo' else None})
+               'duo_strength': marker['strength'] if label == 'duo' else None,
+               'evidence': marker.get('evidence', {'policy': 'original'})})
     print(f'PRIVATE {label.upper()} ZIP READY: {target}', flush=True)
 
 
@@ -269,9 +315,14 @@ def main():
     parser.add_argument('--models', type=Path, default=Path('models2'))
     parser.add_argument('--infer-batch', type=int, default=8)
     parser.add_argument('--shard-size', type=int, default=10)
+    parser.add_argument('--duo-policy', choices=['original', 'fulltext-v2'], default='original')
+    parser.add_argument('--evidence-index', type=Path)
+    parser.add_argument('--v9-cache-from', type=Path)
     args = parser.parse_args()
     if min(args.infer_batch, args.shard_size) < 1:
         parser.error('Batches and shards must be positive')
+    if args.duo_policy == 'fulltext-v2' and args.evidence_index is None:
+        parser.error('--evidence-index is required for fulltext-v2')
     if args.out.resolve() == args.duo_run.resolve():
         parser.error('Private outputs must not overwrite the trained duo run')
     records, signature, marker = preflight(args)

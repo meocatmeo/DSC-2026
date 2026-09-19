@@ -115,6 +115,28 @@ class TestPrivateInference(unittest.TestCase):
             with self.assertRaises(ValueError):
                 private.write_submission(self.args,invalid,'duo',set(self.docs),self.marker)
 
+    def test_fulltext_policy_reaches_comparator_and_records_visible_evidence(self):
+        self.collect()
+        self.args.duo_policy = 'fulltext-v2'
+        self.args.evidence_index = self.root/'evidence.sqlite'
+        evidence = Mock()
+        evidence.expand.side_effect = lambda query, docs, base, known: (docs, base)
+        evidence.encode.return_value = {'a': [[101, 102]]}
+        evidence.trace = {'schema': 'duo-fulltext-v2', 'additions': [], 'documents': {}}
+        memory = Mock()
+        memory.search.return_value = ({}, [])
+        with patch.object(private, 'Local'), patch.object(private.duo, 'PairTokenizer'), \
+             patch('legalir2.duo_evidence.Evidence', return_value=evidence), \
+             patch.object(private.duo, 'Evidence') as legacy, \
+             patch.object(private, 'QuestionMemory', return_value=memory), \
+             patch.object(private.duo, 'compare_documents', return_value=np.full((6,6), .5)) as compare:
+            rows = private.collect_duo(self.args, self.records, self.signature, self.marker)
+        legacy.assert_not_called()
+        self.assertEqual(evidence.expand.call_count, 3)
+        self.assertEqual(compare.call_args.args[3], evidence.encode.return_value)
+        self.assertEqual(rows[0]['evidence']['schema'], 'duo-fulltext-v2')
+        evidence.close.assert_called_once()
+
     def test_asset_hash_mismatch_is_fatal(self):
         directory = Path(private.__file__).parent
         files = {'legalir2/'+name:file_hash(directory/name) for name in private.SOURCE_MODULES}

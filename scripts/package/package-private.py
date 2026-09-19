@@ -1,11 +1,15 @@
 """Build a checked private-inference overlay without changing trained module bytes."""
 import hashlib
+import argparse
 import json
 from pathlib import Path
 import zipfile
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--fulltext', action='store_true')
+    args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     signature = json.loads((root/'analysis/impact/duo-20260918T110105Z/inputs.json').read_text(encoding='utf-8'))
     import sys
@@ -18,6 +22,11 @@ def main():
              'scripts/gpu/gpu-ranking-h100-runtime.sh', 'tests2/__init__.py', 'tests2/test_private_infer.py',
              'tests2/test_private_restore.py', 'tests2/test_layout.py',
              'docs/runbooks/RUNBOOK-private.md', 'data/private-official.json']
+    if args.fulltext:
+        names += ['legalir2/duo_evidence.py', 'scripts/gpu/gpu-duo-fulltext.sh',
+                  'docs/runbooks/RUNBOOK-duo-fulltext.md', 'tests2/test_duo_evidence.py',
+                  'tests2/test_duo.py']
+        payloads['analysis/private/corpus.jsonl.gz'] = (root/'analysis/v11/baseline/corpus.jsonl.gz').read_bytes()
     pins = dict(line.split('==') for line in (root/'config/requirements-private-h100.txt').read_text().splitlines()
                 if line and not line.startswith('#'))
     expected = {k:v for k,v in dict(signature['source_inputs']['packages'], **signature['packages']).items()
@@ -42,7 +51,8 @@ def main():
         if hashlib.sha256(data).hexdigest() != signature['source_inputs']['files'][key]:
             raise ValueError('Frozen baseline differs: ' + name)
         payloads['analysis/private/baseline/'+name] = data
-    output = root/'releases/private/20260919-layout-v2/private-inference-overlay.zip'
+    release = '20260919-duo-fulltext-v2' if args.fulltext else '20260919-layout-v2'
+    output = root/'releases/private'/release/'private-inference-overlay.zip'
     output.parent.mkdir(parents=True, exist_ok=True)
     manifest = ''.join(f'{hashlib.sha256(data).hexdigest()}  {name}\n' for name,data in sorted(payloads.items()))
     payloads['private-files.sha256'] = manifest.encode()
