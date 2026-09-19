@@ -1,20 +1,24 @@
-selected-contexts/
-.venv/
+data/selected-contexts/
+.venv*/
+artifacts-ranking-h100/
+.ranking-h100.lock
 __pycache__/
 *.pyc
+*.sh
 artifacts/
 models/
 outputs/
 artifacts2/
 models2/
-_upload/
 
 # credentials - never commit these again
 *.conf
-aic-readwrite.conf
+.secrets/
 rclone.conf
-rclone.exe
+tools/bin/
 *.json.credentials
-Claude outputs/
-_results/
+archive/
 analysis/
+submissions/
+releases/
+reports/

@@ -1,0 +1,11 @@
+# Versions recorded by duo-20260918T110105Z and its V9 source run.
+torch==2.7.1+cu128
+transformers==4.51.3
+numpy==2.2.6
+tokenizers==0.21.4
+sentencepiece==0.2.2
+protobuf==7.36.2
+flash-attn==2.8.3
+peft==0.15.2
+scipy==1.15.3
+accelerate==1.15.0

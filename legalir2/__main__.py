@@ -95,7 +95,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("build-store")
-    p.add_argument("--corpus", default=str(ROOT / "selected-contexts"))
+    p.add_argument("--corpus", default=str(ROOT / "data" / "selected-contexts"))
     p.add_argument("--store", default=str(DEFAULT_STORE))
     p.add_argument("--chunk-words", type=int, default=320)
     p.add_argument("--overlap-words", type=int, default=64)
@@ -328,11 +328,11 @@ def main(argv=None):
 
     p = sub.add_parser("validate")
     p.add_argument("--predictions", required=True)
-    p.add_argument("--questions", default=str(ROOT / "public-official.json"))
+    p.add_argument("--questions", default=str(ROOT / "data" / "public-official.json"))
 
     p = sub.add_parser("pack")
     p.add_argument("--predictions", required=True)
-    p.add_argument("--questions", default=str(ROOT / "public-official.json"))
+    p.add_argument("--questions", default=str(ROOT / "data" / "public-official.json"))
     p.add_argument("--store", default=str(DEFAULT_STORE))
     p.add_argument("--output", default=str(ROOT / "outputs" / "submission.zip"))
 

@@ -124,7 +124,7 @@ class SystemTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec("numpy"), "Official scorer requires NumPy")
     def test_official_scorer_parity(self):
-        import scoring
+        from tools.scoring import scoring
         truth = {"a": ["1", "2"], "b": ["3"], "c": ["4"]}
         predicted = {"a": {"answer": ["1", "5"]}, "b": {"answer": []},
                      "c": {"answer": ["1", "2", "3", "4", "5", "6"]}}

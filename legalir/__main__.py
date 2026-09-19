@@ -112,12 +112,12 @@ def parser():
     cli = argparse.ArgumentParser(description="UIT DSC Task 1: local legal document retrieval")
     commands = cli.add_subparsers(dest="command", required=True)
     prepare_cli = commands.add_parser("prepare", help="Build chunked SQLite BM25 index")
-    prepare_cli.add_argument("--corpus", type=Path, default=ROOT / "selected-contexts")
+    prepare_cli.add_argument("--corpus", type=Path, default=ROOT / "data" / "selected-contexts")
     prepare_cli.add_argument("--database", type=Path, default=ROOT / "artifacts/corpus.sqlite")
     prepare_cli.add_argument("--chunk-words", type=int, default=180)
     prepare_cli.add_argument("--overlap-words", type=int, default=40)
     split_cli = commands.add_parser("split", help="Create reproducible grouped training holdout")
-    split_cli.add_argument("--source", type=Path, default=ROOT / "train.json")
+    split_cli.add_argument("--source", type=Path, default=ROOT / "data" / "train.json")
     split_cli.add_argument("--output", type=Path, default=ROOT / "artifacts/splits")
     split_cli.add_argument("--fraction", type=float, default=0.15)
     split_cli.add_argument("--seed", type=int, default=2026)
@@ -154,7 +154,7 @@ def parser():
     for name in ("validate", "pack"):
         sub = commands.add_parser(name)
         sub.add_argument("--predictions", type=Path, required=True)
-        sub.add_argument("--questions", type=Path, default=ROOT / "public-official.json")
+        sub.add_argument("--questions", type=Path, default=ROOT / "data" / "public-official.json")
         sub.add_argument("--database", type=Path, default=ROOT / "artifacts/corpus.sqlite")
         if name == "pack":
             sub.add_argument("--output", type=Path, default=ROOT / "outputs/submission.zip")
