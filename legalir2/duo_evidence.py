@@ -14,7 +14,7 @@ import sqlite3
 import unicodedata
 from pathlib import Path
 
-from .store import Store, file_hash, read_json, source_records
+from .store import Store, file_hash, source_records
 
 SCHEMA = 'duo-fulltext-v2'
 WINDOW = 220
@@ -55,13 +55,21 @@ def overlap(query, text):
         return 0, 0.
     body_set = set(body)
     coverage = len(set(q) & body_set) / len(set(q))
-    longest = 0
-    for size in range(min(len(q), 24), 1, -1):
-        phrases = {tuple(body[i:i + size]) for i in range(len(body) - size + 1)}
-        if any(tuple(q[i:i + size]) in phrases for i in range(len(q) - size + 1)):
-            longest = size
-            break
-    return longest, coverage
+    # Longest common contiguous run, capped at the original 24-token limit.
+    # Track matching query positions only, instead of materializing sets of
+    # every 2..24-token source n-gram for every candidate passage.
+    positions = {}
+    for i, token in enumerate(q):
+        positions.setdefault(token, []).append(i)
+    previous, longest = {}, 0
+    for token in body:
+        current = {i: previous.get(i - 1, 0) + 1 for i in positions.get(token, ())}
+        if current:
+            longest = max(longest, max(current.values()))
+            if longest >= 24:
+                return 24, coverage
+        previous = current
+    return longest if longest >= 2 else 0, coverage
 
 
 def build(corpus, store_path, target):

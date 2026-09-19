@@ -9,7 +9,13 @@ import zipfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fulltext', action='store_true')
+    parser.add_argument('--gpu', choices=('h100', '4090'), default='h100')
+    parser.add_argument('--fast-evidence', action='store_true')
     args = parser.parse_args()
+    if args.gpu == '4090' and not args.fulltext:
+        parser.error('The 4090 release requires --fulltext')
+    if args.fast_evidence and (not args.fulltext or args.gpu != '4090'):
+        parser.error('--fast-evidence requires --fulltext --gpu 4090')
     root = Path(__file__).resolve().parents[2]
     signature = json.loads((root/'analysis/impact/duo-20260918T110105Z/inputs.json').read_text(encoding='utf-8'))
     import sys
@@ -17,6 +23,7 @@ def main():
     from legalir2.private_infer import SOURCE_MODULES
     payloads = {}
     names = ['legalir2/private_infer.py', 'legalir2/private_restore.py', 'legalir2/download.py',
+             'legalir2/private_gpu.py',
              'scripts/gpu/gpu-private-h100.sh', 'scripts/gpu/gpu-private-setup.sh',
              'config/requirements-private-h100.txt', 'scripts/gpu/gpu-duo-runtime.sh',
              'scripts/gpu/gpu-ranking-h100-runtime.sh', 'tests2/__init__.py', 'tests2/test_private_infer.py',
@@ -27,6 +34,12 @@ def main():
                   'docs/runbooks/RUNBOOK-duo-fulltext.md', 'tests2/test_duo_evidence.py',
                   'tests2/test_duo.py']
         payloads['analysis/private/corpus.jsonl.gz'] = (root/'analysis/v11/baseline/corpus.jsonl.gz').read_bytes()
+    if args.gpu == '4090':
+        names += ['scripts/gpu/gpu-duo-4090.sh', 'docs/runbooks/RUNBOOK-duo-4090.md',
+                  'tests2/test_private_gpu.py']
+    if args.fast_evidence:
+        names += ['scripts/gpu/gpu-duo-4090-fast.sh', 'tests2/test_duo_overlap.py',
+                  'docs/runbooks/RUNBOOK-duo-4090-fast.md']
     pins = dict(line.split('==') for line in (root/'config/requirements-private-h100.txt').read_text().splitlines()
                 if line and not line.startswith('#'))
     expected = {k:v for k,v in dict(signature['source_inputs']['packages'], **signature['packages']).items()
@@ -52,6 +65,10 @@ def main():
             raise ValueError('Frozen baseline differs: ' + name)
         payloads['analysis/private/baseline/'+name] = data
     release = '20260919-duo-fulltext-v2' if args.fulltext else '20260919-layout-v2'
+    if args.gpu == '4090':
+        release += '-4090'
+    if args.fast_evidence:
+        release += '-fast1'
     output = root/'releases/private'/release/'private-inference-overlay.zip'
     output.parent.mkdir(parents=True, exist_ok=True)
     manifest = ''.join(f'{hashlib.sha256(data).hexdigest()}  {name}\n' for name,data in sorted(payloads.items()))

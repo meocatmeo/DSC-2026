@@ -3,6 +3,8 @@
 **Private test: 2,080 questions. Best reported score: duo 0.9469; V9 0.9457.**
 
 - [GPU setup and inference](docs/runbooks/RUNBOOK-private.md)
+- [RTX 4090 setup and full-text duo inference](docs/runbooks/RUNBOOK-duo-4090.md)
+- [Faster evidence preparation for a fresh 4090 run](docs/runbooks/RUNBOOK-duo-4090-fast.md)
 - [Submission files and scores](submissions/private/20260919-v1/README.md)
 - [Directory map and migration details](docs/PROJECT-LAYOUT.md)
 - [Private task state](docs/state/PRIVATE-TEST.md)
@@ -37,6 +39,8 @@ model weights, caches and generated outputs. Shell scripts are preserved locally
 bash scripts/gpu/gpu-private-setup.sh all  # fresh H100
 bash scripts/gpu/gpu-private-h100.sh all   # existing compatible environment
 python scripts/package/package-private.py
+bash scripts/gpu/gpu-duo-4090.sh all      # fresh RTX 4090, full-text duo
+python scripts/package/package-private.py --fulltext --gpu 4090
 ```
 
 Run commands from the repository root. Launchers also locate the root when called
