@@ -52,6 +52,8 @@ class CollectTests(unittest.TestCase):
                     collect(args)
                 fail[0] = False
                 collect(args)
+                self.assertEqual(constructor.call_args.kwargs['settings']['passage_selection'],
+                                 'retrieval')
                 self.assertEqual(calls, ['question0', 'question1', 'question1'])
                 self.assertEqual([r['id'] for r in load_cache(args.output / 'train.jsonl.gz')], ['q0', 'q1'])
                 self.assertEqual(len(closes), 2)

@@ -6,6 +6,7 @@ audited as a whole against the competition's parameter budget.
 """
 import gc
 import json
+import os
 from pathlib import Path
 
 BUDGET = 4_000_000_000
@@ -190,6 +191,18 @@ def dtype_kwarg(value):
     return {"dtype": value} if major >= 5 else {"torch_dtype": value}
 
 
+def attention_for(kind, device):
+    """The H100 launcher may opt causal rerankers into a benchmarked backend.
+
+    XLM-R stays on SDPA: installing flash-attn does not add a Transformers
+    FlashAttention implementation to an architecture that has none.
+    """
+    choice = os.environ.get("LEGALIR_CAUSAL_ATTN", "sdpa")
+    if choice not in ("sdpa", "flash_attention_2"):
+        raise ValueError(f"unsupported causal attention backend: {choice}")
+    return choice if kind == "causal" and device.startswith("cuda") else "sdpa"
+
+
 class Local:
     """One locally stored checkpoint plus its parameter count."""
 
@@ -208,6 +221,7 @@ class Local:
         self.path = path
         self.device = device
         self.kind = kind
+        self.attention = attention_for(kind, device)
         self.model_type, self.config = family(path)
         self.pooling = pooling_for(self.model_type)
         loader = {"encoder": AutoModel, "sequence": AutoModelForSequenceClassification,
@@ -218,7 +232,7 @@ class Local:
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model = loader.from_pretrained(
-            path, local_files_only=True, attn_implementation="sdpa", trust_remote_code=False,
+            path, local_files_only=True, attn_implementation=self.attention, trust_remote_code=False,
             **dtype_kwarg(dtype or torch_dtype(torch, device))).to(device).eval()
         self.parameters = sum(p.numel() for p in self.model.parameters())
         self.context_limit = context_limit(self.config, self.tokenizer)

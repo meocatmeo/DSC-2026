@@ -275,9 +275,9 @@ class Lexical:
         out.sort(key=lambda x: (-x[1], x[0]))
         return out
 
-    def search(self, query, limit=None):
+    def search(self, query, limit=None, scores=None):
         """Return (document ranking, chunk ranking) for one question."""
-        scores = self.chunk_scores(query)
+        scores = self.chunk_scores(query) if scores is None else scores
         picks = self.top_chunks(scores, limit)
         chunk_ranking = [(int(self.unigram.chunk_ids[p]), float(scores[p])) for p in picks]
         return self.documents(picks, scores), chunk_ranking

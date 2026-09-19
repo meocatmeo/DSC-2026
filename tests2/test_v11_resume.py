@@ -49,17 +49,29 @@ class ResumeTests(unittest.TestCase):
             prepare_resume(self.directory, moved, self.items)
 
     def test_only_audited_code_hashes_are_resume_compatible(self):
-        import hashlib
-        import legalir2.v11
         from legalir2.v11_compat import compatible_signature, EQUIVALENT
         for name, hashes in EQUIVALENT.items():
-            source = Path(legalir2.v11.__file__).parent / name
-            self.assertIn(hashlib.sha256(source.read_bytes()).hexdigest(), hashes)
             old = {'code': {name: hashes[0]}, 'store': 'same'}
             new = {'code': {name: hashes[-1]}, 'store': 'same'}
             self.assertEqual(compatible_signature(old), compatible_signature(new))
             self.assertNotEqual(compatible_signature(old), compatible_signature({'code': {name: 'unknown'}, 'store': 'same'}))
             self.assertEqual(old['code'][name], hashes[0])  # never mutates the guard
+
+    def test_new_scoring_revision_cannot_resume_september17_rows(self):
+        import hashlib
+        import legalir2.v11
+        from legalir2.v11_compat import EQUIVALENT
+        source = Path(legalir2.v11.__file__)
+        current = hashlib.sha256(source.read_bytes()).hexdigest()
+        # The compatibility list freezes historical I/O-only repairs. A new
+        # feature/evidence revision must not be added just to make a test pass.
+        self.assertNotIn(current, EQUIVALENT['v11.py'])
+        old = dict(self.signature, code={'v11.py': EQUIVALENT['v11.py'][-1]})
+        prepare_resume(self.directory, old, self.items)
+        checkpoint_row(self.directory, row_for('q1', 'câu một', ['d1']))
+        changed = dict(self.signature, code={'v11.py': current})
+        with self.assertRaises(ValueError):
+            prepare_resume(self.directory, changed, self.items)
 
     def test_rows_without_a_guard_are_refused(self):
         self.directory.mkdir(parents=True)

@@ -444,7 +444,7 @@ def dispatch(args):
 
         if args.fit_stacker:
             from .cache import duplicate_groups, folds
-            from .stack import FEATURES, Stacker
+            from .stack import FEATURES, FEATURE_VERSION, Stacker
             rows = [r for c in caches for r in c.features()]
             identifiers = [qid for qid, _, _ in rows]
 
@@ -486,6 +486,7 @@ def dispatch(args):
             weights, history = fit([(m, y) for _, m, y in rows])
             write_json(args.fit_stacker,
                        {"features": list(FEATURES), "weights": weights.tolist(),
+                        "feature_version": FEATURE_VERSION,
                         "questions": len(rows), "loss": history[-1],
                         "out_of_fold": {"folds": args.stacker_folds,
                                         "questions": len(held_out),

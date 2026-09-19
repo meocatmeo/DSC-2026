@@ -55,6 +55,11 @@ PER_RERANKER = ("rr_max", "rr_second", "rr_mean", "rr_spread", "rr_near_top")
 # per-model block can express it: agreement is a relation, not a property.
 AGREEMENT = ("rr_agree_rank", "rr_gap", "rr_min_norm")
 
+# Version 1 gave absent documents rank len(candidates) + 1, even when a channel
+# contained deeper real ranks. Old weights retain that meaning for baseline replay;
+# newly collected features give absence zero reciprocal-rank credit.
+FEATURE_VERSION = 2
+
 
 def feature_names(rerankers=1):
     """Feature names for a given number of rerankers.
@@ -94,13 +99,13 @@ def _passage_block(table, doc):
             float(sum(1 for v in values if v >= best - 1.0)))
 
 
-def build_features(docs, passage_scores, channels):
+def build_features(docs, passage_scores, channels, version=FEATURE_VERSION):
     """Feature matrix for one question, per-question normalised.
 
     Shape is (len(docs), 12) with one reranker and (len(docs), 12 + 5*(n-1) + 3) with n.
 
-    Missing channels are handled as "ranked worse than anything present" rather than as
-    zero, because absence from a channel is evidence, not a neutral value.
+    Missing documents receive zero reciprocal-rank credit, below every real rank.
+    Version 1 retains the historical sentinel for replaying old fitted weights.
 
     **Every reranker is read, not just the first.** Until this change the function took a
     list of score tables and used `passage_scores[0]`, so a second model was scored, paid
@@ -109,11 +114,13 @@ def build_features(docs, passage_scores, channels):
     an ensemble whose significant +0.0086 vanished to +0.0003 with 1,030 of 1,050
     predictions identical - the signature of the second model having no effect at all.
     """
+    if version not in (1, FEATURE_VERSION):
+        raise ValueError(f"unsupported stacker feature version: {version}")
     tables = [t for t in (passage_scores or []) if t is not None] or [{}]
     table = tables[0]
     lex, den = _ranks(channels.get("lexical") or []), _ranks(channels.get("dense") or [])
     fused = _ranks(channels.get("fused") or [])
-    absent = len(docs) + 1
+    absent = len(docs) + 1 if version == 1 else float("inf")
 
     # Each reranker's own document ranking, so "the models disagree about where this
     # document belongs" can be a feature. Raw scores are not comparable between models;
@@ -164,22 +171,26 @@ def build_features(docs, passage_scores, channels):
 class Stacker:
     """A fitted linear scorer. Arithmetic only - no model, no parameter budget."""
 
-    def __init__(self, weights, names=FEATURES):
+    def __init__(self, weights, names=FEATURES, version=FEATURE_VERSION):
         self.weights = np.asarray(weights, dtype="float64")
         self.names = tuple(names)
+        if version not in (1, FEATURE_VERSION):
+            raise ValueError(f"unsupported stacker feature version: {version}")
+        self.version = version
         if self.weights.shape != (len(self.names),):
             raise ValueError(f"expected {len(self.names)} weights, got {self.weights.shape}")
 
     @classmethod
     def load(cls, path):
         record = json.loads(Path(path).read_text(encoding="utf-8"))
-        return cls(record["weights"], record.get("features", FEATURES))
+        return cls(record["weights"], record.get("features", FEATURES),
+                   record.get("feature_version", 1))
 
     def score(self, matrix):
         return matrix @ self.weights
 
     def order(self, docs, passage_scores, channels):
-        matrix = build_features(docs, passage_scores, channels)
+        matrix = build_features(docs, passage_scores, channels, self.version)
         if matrix.shape[1] != len(self.names):
             # A 12-weight stacker paired with a two-reranker pipeline used to produce a
             # ranking that silently ignored the second model. Refusing is the point: the
@@ -268,6 +279,7 @@ def collect(args, limit=2000, output=None, depth=None):
         tables = [pipeline._rerank(model, record["question"], docs, prior, cache)
                   for model in pipeline.rerankers]
         cached.append({"id": qid,
+                       "feature_version": FEATURE_VERSION,
                        "features": build_features(docs, tables, channels).tolist(),
                        "labels": labels.tolist()})
         if number % 100 == 0:
@@ -284,10 +296,15 @@ def collect(args, limit=2000, output=None, depth=None):
 
 
 def train(cache_path, output, **kwargs):
-    rows = []
-    for line in Path(cache_path).open(encoding="utf-8"):
-        record = json.loads(line)
-        rows.append((np.asarray(record["features"]), np.asarray(record["labels"])))
+    rows, versions = [], set()
+    with Path(cache_path).open(encoding="utf-8") as stream:
+        for line in stream:
+            record = json.loads(line)
+            versions.add(record.get("feature_version", 1))
+            rows.append((np.asarray(record["features"]), np.asarray(record["labels"])))
+    if len(versions) != 1 or not versions <= {1, FEATURE_VERSION}:
+        raise ValueError("stacker cache has mixed or unsupported feature versions; recollect it")
+    version = versions.pop()
     width = rows[0][0].shape[1]
     # Recover how many rerankers produced this cache from the width, so the printed
     # weights are labelled correctly and the written file records the right names.
@@ -311,6 +328,7 @@ def train(cache_path, output, **kwargs):
               f"{100 * share / float(np.abs(weights).sum()):.1f}%")
         print("  near zero would mean the second model adds nothing the first does not")
     write_json(output, {"features": list(names), "weights": weights.tolist(),
+                        "feature_version": version,
                         "rerankers": rerankers,
                         "questions": len(rows), "loss": history[-1],
                         "history": history[::25]})

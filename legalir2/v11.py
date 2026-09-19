@@ -151,6 +151,7 @@ def collect(args):
     from .pipeline import Pipeline, final_order
     run = read_json(args.baseline / 'v9-ensemble.run.json')
     settings = dict(run['settings'], stacker=str(args.baseline / 'v9-stacker-ens.json'))
+    settings.setdefault('passage_selection', 'retrieval')  # frozen V9 evidence
     if settings['stage2_candidates'] != settings['candidates']:
         raise ValueError('This V11 variant requires both rerankers to score every candidate')
     # Require requested components; never silently fall back to lexical-only.
@@ -241,7 +242,8 @@ def collect(args):
             scores = qwen.score_bundles(bundles, args.bundle_batch)
             payload = {'id': qid, 'question': query, 'gold': row.get('answer', []),
                        'docs': docs, 'fused': fused, 'channels': channels,
-                       'features': build_features(docs, tables, channels).tolist(),
+                       'features': build_features(docs, tables, channels,
+                                                  version=getattr(pipeline.stacker, 'version', 1)).tolist(),
                        'passage_scores': tables, 'baseline_passages': cache,
                        'bundle_scores': scores, 'bundles': bundles,
                        'frozen_prediction': frozen, 'seconds': time.perf_counter() - tick}

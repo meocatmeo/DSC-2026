@@ -33,6 +33,7 @@ DEFAULTS = {
     "rrf_constant": 60,
     "rerank_blend": 0.02,      # weight of the fusion prior, used mainly to break ties
     "context_radius": 0,
+    "passage_selection": "document",  # document-local ranks | retrieval (V9 replay)
     "rerank_batch": 8,
     "rerank_max_length": 768,
     "aggregate": "max_plus",   # max | max_plus | softmax, over a document's passages
@@ -122,6 +123,8 @@ class Pipeline:
                  embedding_path=None, reranker_path=None, device="cuda",
                  settings=None, lexical_settings=None):
         self.settings = dict(DEFAULTS, **(settings or {}))
+        if self.settings["passage_selection"] not in ("document", "retrieval"):
+            raise ValueError("passage_selection must be 'document' or 'retrieval'")
         self.store = Store(store_path)
         self.lexical = Lexical(lexical_directory, lexical_settings)
         self.dense = None
@@ -146,12 +149,15 @@ class Pipeline:
             self.stacker = Stacker.load(self.settings["stacker"])
         self.audit = audit(parameters) if parameters else {"components": {}, "total": 0}
         self.chunk_document = self.store.chunk_documents()
+        self.lexical_positions = {int(c): i for i, c in enumerate(self.lexical.unigram.chunk_ids)}
+        self.dense_positions = ({int(c): i for i, c in enumerate(self.dense.chunk_ids)}
+                                if self.dense else {})
         self.timings = defaultdict(float)
 
     # ----------------------------------------------------------------- retrieval
 
-    def _dense_documents(self, query):
-        scores = self.dense.scores(query)
+    def _dense_documents(self, query, scores=None):
+        scores = self.dense.scores(query) if scores is None else scores
         limit = min(self.settings["chunk_candidates"], len(scores))
         picks = np.argpartition(-scores, limit - 1)[:limit]
         picks = picks[np.argsort(-scores[picks], kind="stable")]
@@ -179,16 +185,19 @@ class Pipeline:
         fused score cannot tell them apart.
         """
         started = time.time()
+        lexical_scores = self.lexical.chunk_scores(query)
         lexical_documents, lexical_chunks = self.lexical.search(
-            query, self.settings["chunk_candidates"])
+            query, self.settings["chunk_candidates"], scores=lexical_scores)
         self.timings["lexical"] += time.time() - started
         rankings, weights = [lexical_documents], [self.settings["lexical_weight"]]
         chunk_prior = defaultdict(float)
         for rank, (chunk, _) in enumerate(lexical_chunks, 1):
             chunk_prior[chunk] += self.settings["lexical_weight"] / (60 + rank)
+        dense_scores = None
         if self.dense:
             started = time.time()
-            dense_documents, dense_chunks = self._dense_documents(query)
+            dense_scores = self.dense.scores(query)
+            dense_documents, dense_chunks = self._dense_documents(query, scores=dense_scores)
             self.timings["dense"] += time.time() - started
             rankings.append(dense_documents)
             weights.append(self.settings["dense_weight"])
@@ -203,15 +212,49 @@ class Pipeline:
         if len(fused) < self.settings["top_k"]:
             present = {doc for doc, _ in fused}
             fused = fused + [(doc, 0.0) for doc in self.store.doc_ids if doc not in present]
-        return fused[:self.settings["shortlist"]], chunk_prior
+        fused = fused[:self.settings["shortlist"]]
+        if self.settings["passage_selection"] == "document":
+            started = time.time()
+            chunk_prior = self._document_prior([doc for doc, _ in fused],
+                                                lexical_scores, dense_scores)
+            self.timings["passages"] += time.time() - started
+        return fused, chunk_prior
 
     # ----------------------------------------------------------------- reranking
+
+    def _document_prior(self, documents, lexical_scores, dense_scores=None):
+        """Rank evidence inside each candidate, before the global chunk cutoff.
+
+        Candidate generation already computes both full score arrays. Reuse them:
+        a relevant article need not compete with every other document just to be
+        shown to the reranker. The document shortlist itself is unchanged.
+        """
+        prior = {}
+        for doc in documents:
+            chunks = self.store.document_chunk_ids(doc)
+            lexical = [(c, float(lexical_scores[self.lexical_positions[c]]))
+                       for c in chunks if c in self.lexical_positions]
+            lexical = sorted(((c, s) for c, s in lexical if s > 0),
+                             key=lambda x: (-x[1], x[0]))
+            rankings, weights = [lexical], [self.settings["lexical_weight"]]
+            if dense_scores is not None:
+                dense = [(c, float(dense_scores[self.dense_positions[c]]))
+                         for c in chunks if c in self.dense_positions]
+                dense.sort(key=lambda x: (-x[1], x[0]))
+                rankings.append(dense)
+                weights.append(self.settings["dense_weight"])
+            prior.update(rrf(rankings, weights, self.settings["rrf_constant"]))
+        return prior
 
     def _passages(self, doc_id, chunk_prior, count=None):
         count = count if count is not None else self.settings["passages"]
         chunk_ids = self.store.document_chunk_ids(doc_id)
         ordered = sorted(chunk_ids, key=lambda c: (-chunk_prior.get(c, 0.0), c))
-        pool = ordered[:max(8, count * 3)]
+        # Scan until enough distinct passages are found. Restricting the pool to
+        # nine chunks can spend all three slots on overlapping copies while a
+        # useful second article sits tenth. Keep the old window for V9 replay.
+        pool = (ordered if self.settings["passage_selection"] == "document"
+                else ordered[:max(8, count * 3)])
         picked = diverse(pool, lambda c: self.store.chunk_text(c, with_label=False),
                          count)
         radius = self.settings["context_radius"]
@@ -291,6 +334,7 @@ class Pipeline:
         # it is not reproducible, and picking a winner from a table of numbers whose
         # provenance lives in scrollback is how the wrong model gets submitted.
         return {"settings": self.settings, "lexical": self.lexical.settings,
+                "stacker_feature_version": self.stacker.version if self.stacker else None,
                 "models": {
                     "stacker": self.settings.get("stacker"),
                     "rerankers": [str(r.local.path) for r in self.rerankers],
