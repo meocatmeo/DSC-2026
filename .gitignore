@@ -22,3 +22,7 @@ analysis/
 submissions/
 releases/
 reports/
+indexes/
+*.npz
+*.npy
+*.zip
