@@ -1,5 +1,9 @@
 # Project layout — version 2
 
+Current development handoff (21 September 2026):
+[docs/development/README.md](development/README.md). The map below records the
+19 September organization; later experiments have additional immutable releases.
+
 The 19 September 2026 migration physically moved loose scripts, Python entry points,
 data, credentials and documents into folders, and reorganized both DSC Drive roots.
 
@@ -46,7 +50,7 @@ DSC-2026-results/
     ranking-h100/             exact source indexes and ranking experiment
     v11/                      earlier V11 runs
   releases/
-    private/20260919-layout-v2/   current inference package
+    private/20260919-layout-v2/   original layout-v2 inference package
     private/20260919-qwen-restore/ earlier package (old cloud paths)
     ranking-h100/             historical ready bundle
     legacy/code/              earlier comparator patches and overlays

@@ -1,5 +1,12 @@
 # DSC-2026 Task 1 (LegalIR) — state of the system
 
+> **Current handoff, 21 September 2026:** read
+> [Developer notes](../development/README.md). Best reported private score is
+> **0.9510** from full-text duo. Deep fusion with 256/512 training questions
+> regressed privately to **0.9464/0.9459** despite small development gains.
+> The body below is historical public-era analysis and early private setup;
+> it does not supersede the current handoff or [PRIVATE-TEST.md](PRIVATE-TEST.md).
+
 > **Active submission target, 19 September 2026: private test only.** The user supplied
 > `private-official.json`: 2,080 questions with hidden answers and no public-ID overlap.
 > Use separate private predictions/caches. Public scores and submissions below are
@@ -9,7 +16,7 @@
 > Separate frozen V9 and duo private inference is ready via `scripts/gpu/gpu-private-h100.sh`;
 > see [RUNBOOK-private.md](../runbooks/RUNBOOK-private.md). The user has now supplied both private
 > prediction JSONs and reported **duo 0.9469 vs V9 0.9457** (+0.0012).
-> Duo is the current best reported private baseline. Both files cover all 2,080 IDs;
+> Those were the initial private baselines, superseded by full-text duo 0.9510. Both files cover all 2,080 IDs;
 > comparison details are in `analysis/private/leaderboard-comparison.json`.
 
 *Written 16 September 2026, updated 17 September. Covers everything from the first

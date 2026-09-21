@@ -159,6 +159,39 @@ class TestPrivateInference(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'asset missing/changed'):
             private.verify_assets(self.args,signature)
 
+    def test_finite_stale_comparator_scores_are_rejected_before_cache_reuse(self):
+        record = self.records['p1']
+        old = self.row('p1', record)
+        probability = np.full((6, 6), .5)
+        prior, ability = private.duo.tournament(np.arange(6.), probability)
+        row = {'id': 'p1', 'question': record['question'], 'gold': [], 'docs': self.docs,
+               'prior': prior.tolist(), 'ability': ability.tolist(),
+               'probabilities': probability.tolist(),
+               'baseline': private.h100.order(old, self.weights, 1)}
+        check = lambda rows, items: private.validate_duo(rows, items, set(self.docs), [old], self.weights)
+        items = [('p1', record)]
+        check([row], items)
+        for field in ('ability', 'prior', 'probabilities'):
+            corrupt = json.loads(json.dumps(row))
+            if field == 'probabilities':
+                corrupt[field][0][1], corrupt[field][1][0] = .9, .1
+            else:
+                corrupt[field][0] += .5
+            # Previous validation accepted these finite, correctly shaped data.
+            private.duo.validate_scores([corrupt], items)
+            path = self.root/'corrupt-duo.json'
+            write_json(path, [corrupt])
+            compute = Mock()
+            with self.assertRaisesRegex(ValueError, 'pairwise comparisons'):
+                private.cache_row(path, items, check, compute)
+            compute.assert_not_called()
+
+    def test_comparison_fit_accepts_small_prior_variance_without_renormalizing(self):
+        prior = np.arange(6.) * .001
+        prior, ability = private.duo.tournament(prior, np.full((6, 6), .5))
+        private.validate_comparison_fit({'prior': prior, 'ability': ability,
+                                        'probabilities': np.full((6, 6), .5)})
+
 
 class TestPrivateShell(unittest.TestCase):
     def test_setup_stops_on_flash_failure_and_reaches_inference_on_success(self):

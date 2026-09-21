@@ -144,8 +144,21 @@ def validate_v9(rows, items, known):
 def validate_duo(rows, items, known, base, weights):
     duo.validate_scores(rows, items)
     for row, old in zip(rows, base):
+        validate_comparison_fit(row)
         if not set(row['docs']).issubset(known) or row['baseline'] != h100.order(old, weights, 1):
             raise ValueError('Duo shard differs from its V9 private baseline')
+
+
+def validate_comparison_fit(row):
+    """Reject finite but stale scores that do not fit the saved comparisons."""
+    prior, ability = np.asarray(row['prior']), np.asarray(row['ability'])
+    probabilities = np.asarray(row['probabilities'])
+    fitted = 1 / (1 + np.exp(-np.clip(ability[:, None] - ability[None, :], -30, 30)))
+    # The saved tournament uses precision=1. Its strictly convex objective has
+    # one optimum; check that optimum directly without normalizing prior again.
+    gradient = (fitted - probabilities).sum(axis=1) + ability - prior
+    if not np.isfinite(gradient).all() or np.max(np.abs(gradient)) > 1e-5:
+        raise ValueError('Cached duo abilities do not match the saved pairwise comparisons')
 
 
 def cache_row(path, items, validate, compute):
