@@ -26,3 +26,23 @@ indexes/
 *.npz
 *.npy
 *.zip
+
+# Reproducible CPU coverage/gate entry points and their verified cache loaders.
+!scripts/analysis/
+scripts/analysis/*
+!scripts/analysis/audit_prior_development.py
+!scripts/analysis/evaluate_duo_boundary.py
+!scripts/analysis/sweep_fts_coverage.py
+!scripts/analysis/gate_fts_admission.py
+!scripts/analysis/evaluate_current_fusion.py
+!scripts/analysis/rank_fusion_probe.py
+!scripts/analysis/validate_rank_fusion_probe.py
+!scripts/analysis/evaluate_fourth_voter.py
+!scripts/analysis/stress_fourth_vote.py
+!scripts/analysis/rebuild_duo_fulltext_training.py
+!scripts/analysis/verify_duo_fulltext_training.py
+!scripts/analysis/audit_retrained_private.py
+!scripts/analysis/evaluate_duo_agreement.py
+!scripts/analysis/submit_duo_agreement.py
+!scripts/analysis/evaluate_local_authorities.py
+!scripts/analysis/deadline_agreement.py

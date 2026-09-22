@@ -1,6 +1,6 @@
 # Experiment results and development lessons
 
-Updated 21 September 2026. [Start here](README.md) for the current decision.
+Updated 22 September 2026. [Start here](README.md) for the current decision.
 
 ## Evidence levels
 
@@ -16,9 +16,34 @@ accuracy. Candidate coverage is not final Recall@5.
 | --- | ---: | ---: | --- |
 | Original V9 private | Different historical configuration | 0.9457 | Historical reference |
 | Original short-passage duo | Different historical configuration | 0.9469 | Historical reference |
-| Full-text duo baseline | 0.9502719503 | **0.9510** | Keep as best private reference |
+| Full-text duo baseline | 0.9502719503 | 0.9510 | Preserve as frozen ranking anchor |
 | Deep fusion, 256 training questions | 0.9514374514 | 0.9464 | Private regression: -0.0046 |
 | Deep fusion, 512 training questions | 0.9520202020 | 0.9459 | Private regression: -0.0051 |
+| Retrained full-text comparator, matched control | 0.9526029526 | 0.9500 | Private regression: -0.0010; retain baseline |
+| CPU agreement, fifth-slot replacement | 0.9526029526 | **0.9523** | New best reported private score; +0.0013 vs 0.9510 |
+| Deadline fourth-slot rescue | 0.9526029526 | 0.9520 (attribution inferred) | -0.0003 vs best; retain 0.9523 |
+
+The user reported 0.9520 after the recommendation to submit fourth-rescue first.
+The filename was not restated, so that attribution is inferred from context.
+Its 85 changed private answer sets did not improve the aggregate score. This
+does not reveal which replacements were wrong. The stricter fifth-slot candidate
+was already frozen and packaged before this result; it remains an unscored,
+speculative next option, not an established improvement.
+
+The user reported 0.9523 for the exact agreement ZIP on 22 September. Its SHA256
+is `37eb1aedbb06620f429c72c6c02de299d5452e628faa44aff816e255c45e2d3f`.
+It changes 306 fifth-place answers and preserves all first-four answers relative
+to 0.9510. This is an observed aggregate score improvement, not evidence that
+every replacement is correct or that further threshold tuning will improve it.
+The fitted models, fixed rule and original 0.9510 anchor are preserved.
+
+The retrained control was submitted at the user's request without the remaining
+validation. Its [CPU audit](RETRAINED-DUO-CPU-AUDIT.md) verifies all 2,080 cached
+predictions and finds 719 changed private sets (747 replacements). Development
+has one win and no losses among 130 changed sets; 129 changes are recall-neutral.
+The rebuilt and old-evidence matched arms tied in development recall. The audit
+separates remaining candidate-admission misses from ranking/prior failures; it
+does not identify hidden private errors or establish a new improved policy.
 
 The score message used "216"; mapping 0.9464 to the 256 model follows the user's
 preceding explicit file identification and remains qualified pending correction.
@@ -118,7 +143,14 @@ optimistic. A correct implementation and a tiny development gain were treated
 as stronger evidence than they were. Further changes should use the baseline
 as the reference and explicitly measure the risk of losing its correct answers.
 
-Recommended work, not implemented or validated improvements:
+Follow-up completed on 21 September: a 72-policy CPU FTS threshold sweep over
+all 1,479 labeled questions improved pooled candidate coverage from 0.972391
+to 0.975434 (+0.003043). This failed the requested +0.008 prerequisite, so the
+conditional append-only admission experiment was not activated. The numerical
+pooled score gate at +/-0.0052 is implemented but has not passed. See
+[coverage measurements and reproduction](FTS-COVERAGE-GATE.md).
+
+Further work, not validated improvements:
 
 1. Use saved labeled raw scores to audit candidate admission and final-ranking
    losses. Inspect a fixed sample of exclusions, amendments and near-duplicate
@@ -138,6 +170,15 @@ Recommended work, not implemented or validated improvements:
    mean increases. Agree on evidence and compute limits first.
 
 ## Reproduction references
+
+The 22 September [supporting-authority CPU experiment](LOCAL-AUTHORITY-CANDIDATES.md)
+adds name-based and yearless citation parsing. On the reused 429 development
+questions, following references in the first four answer documents proposes at
+most four candidates and recovers two missing gold instances. Pool coverage
+rises from 0.964258 to 0.967754 (+0.003497); original raw-source text and stored
+chunks agree on these coverage results. Even unlimited recognized references
+reach only +0.005828, below the +0.008 prerequisite. No GPU run, private scoring
+or new submission followed. The 0.9523 agreement ZIP remains the best reference.
 
 - `reports/private/submission-review/leaderboard-outcomes.json`: reported scores
   and exact submission hashes.

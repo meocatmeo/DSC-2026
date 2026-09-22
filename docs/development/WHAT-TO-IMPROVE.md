@@ -112,7 +112,28 @@ It is also the hardest. `RETRIEVAL-EXPANSION.md` measured citation expansion at 
 candidate recall, below floor, and found 31 of 34 unreachable gold documents already share
 most of their question's vocabulary. The remaining 0.0113 is not a vocabulary problem.
 
-**So the honest position is: no cheap change clears the bar.**
+**Measured, 21 September.** The FTS threshold sweep (`reports/private/20260921-fts-coverage`,
+72 policies, 175 s CPU) settles it:
+
+| phrase | coverage | extra | Δ pooled coverage | gold recovered | candidates added | gold per addition |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5 | 0.55 | 8 | **+0.00304** | **6** | 320 | 1.9% |
+| 4 | 0.55 | 8 | +0.00270 | 5 | 352 | 1.4% |
+| 6 | 0.55 | 2 *(current)* | — | — | 63 | — |
+
+The best of 72 policies recovers **six gold instances across 1,479 questions** and admits
+**320 candidates** to do it — 98% of what it lets in is a distractor. The bar was +0.0045;
+this is 68% of it, and that is before any conversion loss. At the deep-pool experiment's
+measured conversion for added candidates — none reached the submitted top five — the
+projected score gain is **zero**.
+
+Two structural details close the knob rather than just this sweep. `term_coverage` is
+**inert**: 0.55, 0.40 and 0.25 give identical coverage at every phrase length and differ
+only in how much junk they admit. And relaxing `phrase_words` from 6 to 5 buys one gold
+instance; going to 3 buys nothing further. There is no unexplored setting.
+
+**So the honest position is: no cheap change clears the bar, and the one candidate
+mechanism has now been measured and does not.**
 
 ---
 
@@ -128,13 +149,16 @@ and validation (1,479 questions, ±0.0047) and require the paired interval to ex
 No change tested since v9 would have passed that gate. That single rule would have
 prevented both deep-fusion runs.
 
-**If you run one more thing, make it append-only.** Take the deep pool's coverage gain
-without its ranking churn: a new candidate may enter the top five only when it beats the
-member it displaces by a calibrated margin, with the baseline ranking otherwise frozen.
-Tune the margin on the pooled labeled set so that fewer than ~100 of 2,080 answer sets
-change. That bounds the downside to roughly 100 × 2.3% × 1 ≈ 2 questions while preserving
-whatever the added candidates are worth. It reuses cached scores, needs no GPU training,
-and — unlike everything since v9 — has a failure mode you can size in advance.
+**The append-only experiment is no longer worth building.** It was designed to bank the
+coverage gain without the ranking churn — but §4 now shows there is no coverage gain to
+bank. Six gold instances, 320 distractors, 68% of the bar. Appending them safely would
+preserve a gain that rounds to zero.
+
+**What did work is the process.** A registered plan, a coverage sweep, a pre-declared
+gate, and a refusal — `coverage_gate_cleared: false`, `submission_allowed: false` — in
+175 seconds of CPU, with no GPU rental and no submission burned. That is the first time
+in this project a bad candidate was stopped *before* it cost anything, instead of after a
+private regression. Keep that gate in place for anything that comes next.
 
 ---
 
