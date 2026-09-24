@@ -46,3 +46,15 @@ scripts/analysis/*
 !scripts/analysis/submit_duo_agreement.py
 !scripts/analysis/evaluate_local_authorities.py
 !scripts/analysis/deadline_agreement.py
+!scripts/analysis/evaluate_learned_questions.py
+!scripts/analysis/evaluate_append_only_deep.py
+!scripts/analysis/audit_deep_evidence.py
+!scripts/analysis/submit_strict_tail.py
+!scripts/analysis/prepare_passage_private.py
+!scripts/analysis/submit_agreement_097.py
+!scripts/analysis/submit_agreement_095.py
+!scripts/analysis/submit_agreement_090.py
+!scripts/analysis/submit_agreement_093.py
+!scripts/analysis/combine_passage_scores.py
+!scripts/analysis/final_passage_combination.py
+!scripts/analysis/finalize_passage_private.py
